@@ -1,10 +1,7 @@
-import { useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 
 import { Outlet, useLoaderData } from 'react-router';
 
-import { isCommunityPlan } from '@documenso/ee/server-only/util/is-community-plan';
-import { isUserEnterprise } from '@documenso/ee/server-only/util/is-document-enterprise';
-import { isDocumentPlatform } from '@documenso/ee/server-only/util/is-document-platform';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
 import { TrpcProvider } from '@documenso/trpc/react';
 
@@ -27,66 +24,61 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   const result = await verifyEmbeddingPresignToken({ token }).catch(() => null);
 
-  let hasPlatformPlan = false;
-  let hasEnterprisePlan = false;
-  let hasCommunityPlan = false;
-
-  if (result) {
-    [hasCommunityPlan, hasPlatformPlan, hasEnterprisePlan] = await Promise.all([
-      isCommunityPlan({
-        userId: result.userId,
-        teamId: result.teamId ?? undefined,
-      }),
-      isDocumentPlatform({
-        userId: result.userId,
-        teamId: result.teamId,
-      }),
-      isUserEnterprise({
-        userId: result.userId,
-        teamId: result.teamId ?? undefined,
-      }),
-    ]);
-  }
-
   return {
     hasValidToken: !!result,
     token,
-    hasCommunityPlan,
-    hasPlatformPlan,
-    hasEnterprisePlan,
   };
 };
 
 export default function AuthoringLayout() {
-  const { hasValidToken, token, hasCommunityPlan, hasPlatformPlan, hasEnterprisePlan } =
-    useLoaderData<typeof loader>();
+  const { hasValidToken, token } = useLoaderData<typeof loader>();
 
-  useLayoutEffect(() => {
+  useEffect(() => { // Changed from useLayoutEffect
+    if (typeof window === 'undefined') return; // Add this check for SSR
+
+
     try {
       const hash = window.location.hash.slice(1);
 
-      const result = ZBaseEmbedAuthoringSchema.safeParse(
-        JSON.parse(decodeURIComponent(atob(hash))),
-      );
+      console.log('Raw hash:', hash);
+
+      const decodedHash = decodeURIComponent(atob(hash));
+      console.log('Decoded hash:', decodedHash);
+
+      const parsedData = JSON.parse(decodedHash);
+      console.log('Parsed data:', parsedData);
+
+      const dataWithToken = {
+        ...parsedData,
+        token: token,
+      };
+      console.log('Data with token:', dataWithToken);
+
+      const result = ZBaseEmbedAuthoringSchema.safeParse(dataWithToken);
+      console.log('Schema parse result:', result);
 
       if (!result.success) {
+        console.error('Schema validation failed:', result.error);
         return;
       }
 
-      const { css, cssVars, darkModeDisabled } = result.data;
+      const { css, cssVars, darkModeDisabled, features } = result.data;
+      console.log('Extracted config:', { css, cssVars, darkModeDisabled, features });
 
+      // Apply dark mode class immediately if disabled
       if (darkModeDisabled) {
+        console.log('Attempting to disable dark mode');
         document.documentElement.classList.add('dark-mode-disabled');
       }
 
-      if (hasCommunityPlan || hasPlatformPlan || hasEnterprisePlan) {
-        injectCss({
-          css,
-          cssVars,
-        });
+      // Always apply the CSS regardless of plan
+      if (css || cssVars) {
+        console.log('Applying CSS customizations');
+        injectCss({ css, cssVars });
       }
+
     } catch (error) {
-      console.error(error);
+      console.error('Error in layout effect:', error);
     }
   }, []);
 
@@ -95,8 +87,8 @@ export default function AuthoringLayout() {
   }
 
   return (
-    <TrpcProvider headers={{ authorization: `Bearer ${token}` }}>
-      <Outlet />
-    </TrpcProvider>
+      <TrpcProvider headers={{ authorization: `Bearer ${token}` }}>
+        <Outlet context={{ token }} />
+      </TrpcProvider>
   );
 }

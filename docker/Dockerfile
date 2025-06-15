@@ -115,3 +115,35 @@ COPY --chown=nodejs:nodejs ./docker/start.sh /app/apps/remix/start.sh
 WORKDIR /app/apps/remix
 
 CMD ["sh", "start.sh"]
+
+#########################
+#     DEV CONTAINER     #
+#########################
+FROM installer AS dev
+
+# Add inotify-tools for file watching
+RUN apk add --no-cache inotify-tools
+
+# bring in exactly the same ENV settings as prod
+ENV HUSKY=0 \
+    DOCKER_OUTPUT=1 \
+    NEXT_TELEMETRY_DISABLED=1
+
+# where Remix lives
+WORKDIR /app/apps/remix
+
+# install any CLI tools you need (e.g. dotenv-cli for loading your .env in dev)
+# you can skip this if you already have them in devDependencies
+RUN npm install --no-save dotenv-cli
+
+# generate Prisma client & your Zod models
+RUN npx prisma generate --schema ../../packages/prisma/schema.prisma
+
+COPY --chown=nodejs:nodejs ./docker/dev-start.sh /app/apps/remix/dev-start.sh
+COPY --chown=nodejs:nodejs ./docker/rebuild-and-restart.sh /app/apps/remix/rebuild-and-restart.sh
+
+# expose the dev port
+EXPOSE 3000
+
+# drop into your dev startup script that runs `migrate dev` + `npm run dev -- --host 0.0.0.0`
+CMD ["sh", "/app/docker/dev-start.sh"]

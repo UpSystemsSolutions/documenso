@@ -1,7 +1,8 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useLingui } from '@lingui/react';
 import { useNavigate } from 'react-router';
+import { useOutletContext } from 'react-router';
 
 import { putPdfFile } from '@documenso/lib/universal/upload/put-file';
 import { trpc } from '@documenso/trpc/react';
@@ -18,10 +19,15 @@ import {
   ZBaseEmbedAuthoringSchema,
 } from '~/types/embed-authoring-base-schema';
 
+interface ContextType {
+  token: string;
+}
+
 export default function EmbeddingAuthoringTemplateCreatePage() {
   const { _ } = useLingui();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { token } = useOutletContext<ContextType>();
 
   const [configuration, setConfiguration] = useState<TConfigureEmbedFormSchema | null>(null);
   const [fields, setFields] = useState<TConfigureFieldsFormSchema | null>(null);
@@ -104,6 +110,7 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
             type: 'template-created',
             templateId: createResult.templateId,
             externalId: metaWithExternalId.externalId,
+            title: configuration.title,
           },
           '*',
         );
@@ -126,15 +133,22 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     try {
       const hash = window.location.hash.slice(1);
+      const parsedData = JSON.parse(decodeURIComponent(atob(hash)));
 
-      const result = ZBaseEmbedAuthoringSchema.safeParse(
-        JSON.parse(decodeURIComponent(atob(hash))),
-      );
+      const dataWithToken = {
+        ...parsedData,
+        token: token,
+      };
+
+      const result = ZBaseEmbedAuthoringSchema.safeParse(dataWithToken);
 
       if (!result.success) {
+        console.error('Schema validation failed:', result.error);
         return;
       }
 
@@ -147,7 +161,7 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
     } catch (err) {
       console.error('Error parsing embedding params:', err);
     }
-  }, []);
+  }, [token]);
 
   return (
     <div className="relative mx-auto flex min-h-[100dvh] max-w-screen-lg p-6">
