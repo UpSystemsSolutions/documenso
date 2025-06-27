@@ -102,15 +102,11 @@ export const DocumentInviteEmailTemplate = ({
                 </Text>
               )}
 
-              <Text className="mt-2 text-base text-slate-400">
-                {customBody ? (
+              {customBody && (
+                <Text className="mt-2 text-base text-slate-400">
                   <pre className="font-sans text-base text-slate-400">{customBody}</pre>
-                ) : (
-                  <Trans>
-                    {inviterName} has invited you to {action} the document "{documentName}".
-                  </Trans>
-                )}
-              </Text>
+                </Text>
+              )}
             </Section>
           </Container>
 

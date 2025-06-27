@@ -85,13 +85,15 @@ export const sendPendingEmail = async ({ documentId, recipientId }: SendPendingE
 
   const i18n = await getI18nInstance(document.documentMeta?.language);
 
+  const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+
   await mailer.sendMail({
     to: {
       address: email,
-      name,
+      name: name,
     },
     from: {
-      name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
+      name: customMailIdentity?.name || env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
       address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',
     },
     subject: i18n._(msg`Waiting for others to complete signing.`),

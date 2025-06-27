@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ZBaseEmbedDataSchema } from './embed-base-schemas';
+import { ZCustomMailIdentitySchema } from "@documenso/lib/types/custom-mail-identity";
 
 export const ZBaseEmbedAuthoringSchema = z
   .object({
@@ -17,6 +18,7 @@ export const ZBaseEmbedAuthoringSchema = z
       })
       .optional()
       .default({}),
+    customMailIdentity: ZCustomMailIdentitySchema.optional(),
   })
   .and(ZBaseEmbedDataSchema);
 

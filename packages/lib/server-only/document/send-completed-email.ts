@@ -76,6 +76,7 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
   const emailSettings = extractDerivedDocumentEmailSettings(document.documentMeta);
   const isDocumentCompletedEmailEnabled = emailSettings.documentCompleted;
   const isOwnerDocumentCompletedEmailEnabled = emailSettings.ownerDocumentCompleted;
+  const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
 
   // Send email to document owner if:
   // 1. Owner document completed emails are enabled AND
@@ -109,8 +110,8 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
     await mailer.sendMail({
       to: [
         {
-          name: owner.name || '',
-          address: owner.email,
+          name: customMailIdentity?.name || owner.name || '',
+          address: customMailIdentity?.email || owner.email,
         },
       ],
       from: {
@@ -136,8 +137,8 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
         requestMetadata,
         data: {
           emailType: 'DOCUMENT_COMPLETED',
-          recipientEmail: owner.email,
-          recipientName: owner.name ?? '',
+          recipientEmail: customMailIdentity?.email || owner.email,
+          recipientName: customMailIdentity?.name || owner.name || '',
           recipientId: owner.id,
           recipientRole: 'OWNER',
           isResending: false,
@@ -171,7 +172,7 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
       });
 
       const branding = document.team?.teamGlobalSettings
-        ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings)
+        ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings, document.documentMeta)
         : undefined;
 
       const [html, text] = await Promise.all([
@@ -183,6 +184,8 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
         }),
       ]);
 
+      const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+
       await mailer.sendMail({
         to: [
           {
@@ -191,7 +194,7 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
           },
         ],
         from: {
-          name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
+          name: customMailIdentity?.name || env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
           address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',
         },
         subject:

@@ -250,13 +250,15 @@ const handleDocumentOwnerDelete = async ({
 
       const i18n = await getI18nInstance(document.documentMeta?.language);
 
+      const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+
       await mailer.sendMail({
         to: {
           address: recipient.email,
           name: recipient.name,
         },
         from: {
-          name: FROM_NAME,
+          name: customMailIdentity?.name || FROM_NAME,
           address: FROM_ADDRESS,
         },
         subject: i18n._(msg`Document Cancelled`),

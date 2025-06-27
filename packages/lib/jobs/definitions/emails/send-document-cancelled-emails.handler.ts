@@ -54,6 +54,7 @@ export const run = async ({
   }
 
   const i18n = await getI18nInstance(documentMeta?.language);
+  const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
 
   // Send cancellation emails to all recipients who have been sent the document or viewed it
   const recipientsToNotify = document.recipients.filter(
@@ -67,14 +68,14 @@ export const run = async ({
       recipientsToNotify.map(async (recipient) => {
         const template = createElement(DocumentCancelTemplate, {
           documentName: document.title,
-          inviterName: documentOwner.name || undefined,
-          inviterEmail: documentOwner.email,
+          inviterName: customMailIdentity?.name || documentOwner.name || undefined,
+          inviterEmail: customMailIdentity?.email || documentOwner.email,
           assetBaseUrl: NEXT_PUBLIC_WEBAPP_URL(),
           cancellationReason: cancellationReason || 'The document has been cancelled.',
         });
 
         const branding = document.team?.teamGlobalSettings
-          ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings)
+          ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings, documentMeta)
           : undefined;
 
         const [html, text] = await Promise.all([
@@ -92,7 +93,7 @@ export const run = async ({
             address: recipient.email,
           },
           from: {
-            name: FROM_NAME,
+            name: customMailIdentity?.name || FROM_NAME,
             address: FROM_ADDRESS,
           },
           subject: i18n._(msg`Document "${document.title}" Cancelled`),

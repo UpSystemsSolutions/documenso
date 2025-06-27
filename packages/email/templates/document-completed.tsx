@@ -32,7 +32,7 @@ export const DocumentCompletedEmailTemplate = ({
       <Preview>{_(previewText)}</Preview>
 
       <Body className="mx-auto my-auto font-sans">
-        <Section className="bg-white">
+        <Section className="timesavr-400">
           <Container className="mx-auto mb-2 mt-8 max-w-xl rounded-lg border border-solid border-slate-200 p-2 backdrop-blur-sm">
             <Section className="p-2">
               {branding.brandingEnabled && branding.brandingLogo ? (
@@ -64,3 +64,4 @@ export const DocumentCompletedEmailTemplate = ({
 };
 
 export default DocumentCompletedEmailTemplate;
+

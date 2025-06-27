@@ -64,19 +64,20 @@ export const run = async ({
   }
 
   const i18n = await getI18nInstance(documentMeta?.language);
+  const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
 
   // Send confirmation email to the recipient who rejected
   await io.runTask('send-rejection-confirmation-email', async () => {
     const recipientTemplate = createElement(DocumentRejectionConfirmedEmail, {
       recipientName: recipient.name,
       documentName: document.title,
-      documentOwnerName: document.user.name || document.user.email,
+      documentOwnerName: customMailIdentity?.name || customMailIdentity?.email || document.user.name || document.user.email,
       reason: recipient.rejectionReason || '',
       assetBaseUrl: NEXT_PUBLIC_WEBAPP_URL(),
     });
 
     const branding = document.team?.teamGlobalSettings
-      ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings)
+      ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings, documentMeta)
       : undefined;
 
     const [html, text] = await Promise.all([
@@ -94,7 +95,7 @@ export const run = async ({
         address: recipient.email,
       },
       from: {
-        name: FROM_NAME,
+        name: customMailIdentity?.name || FROM_NAME,
         address: FROM_ADDRESS,
       },
       subject: i18n._(msg`Document "${document.title}" - Rejection Confirmed`),
@@ -130,8 +131,8 @@ export const run = async ({
 
     await mailer.sendMail({
       to: {
-        name: documentOwner.name || '',
-        address: documentOwner.email,
+        name: customMailIdentity?.name || documentOwner.name || '',
+        address: customMailIdentity?.email || documentOwner.email,
       },
       from: {
         name: FROM_NAME,

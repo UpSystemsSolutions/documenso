@@ -18,6 +18,7 @@ import {
   type TBaseEmbedAuthoringSchema,
   ZBaseEmbedAuthoringSchema,
 } from '~/types/embed-authoring-base-schema';
+import type { TCustomMailIdentity } from "@documenso/lib/types/custom-mail-identity";
 
 interface ContextType {
   token: string;
@@ -33,6 +34,7 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
   const [fields, setFields] = useState<TConfigureFieldsFormSchema | null>(null);
   const [features, setFeatures] = useState<TBaseEmbedAuthoringSchema['features'] | null>(null);
   const [externalId, setExternalId] = useState<string | null>(null);
+  const [customMailIdentity, setCustomMailIdentity] = useState<TCustomMailIdentity | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
   const { mutateAsync: createEmbeddingTemplate } =
@@ -70,10 +72,14 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
         type: configuration.documentData.type,
       });
 
-      // Use the externalId from the URL fragment if available
+      // Use the externalId from the URL fragment if available and nest customMailIdentity in emailSettings
       const metaWithExternalId = {
         ...configuration.meta,
         externalId: externalId || configuration.meta.externalId,
+        emailSettings: {
+          ...(configuration.meta?.emailSettings || {}),
+          customMailIdentity: customMailIdentity || configuration.meta?.emailSettings?.customMailIdentity || undefined,
+        },
       };
 
       const createResult = await createEmbeddingTemplate({
@@ -157,6 +163,10 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
       // Extract externalId from the parsed data if available
       if (result.data.externalId) {
         setExternalId(result.data.externalId);
+      }
+
+      if (result.data.customMailIdentity) {
+        setCustomMailIdentity(result.data.customMailIdentity);
       }
     } catch (err) {
       console.error('Error parsing embedding params:', err);

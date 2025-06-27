@@ -108,18 +108,10 @@ module.exports = {
           950: '#252d46',
         },
         timesavr: {
-          DEFAULT: '#88dbe9',
-          50: '#e6f6fa',
-          100: '#bfebf4',
-          200: '#a1e4ec',
-          300: '#84dcec',
-          400: '#88dbe9',
-          500: '#8cacdc',
-          600: '#bcb5cd',
-          700: '#b4accb',
-          800: '#9484b0',
-          900: '#6b5b95',
-          950: '#ae1aac',
+          DEFAULT: '#2d3748',
+          400: '#edf2f7', // Light gray background color
+          500: '#2d3748', // Dark gray primary button color
+          600: '#e53e3e', // Red color for destructive actions
         },
         recipient: {
           green: 'hsl(var(--recipient-green))',

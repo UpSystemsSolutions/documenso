@@ -121,13 +121,13 @@ msgstr "{0}"
 msgid "{0} direct signing templates"
 msgstr "{0} bezpośrednich szablonów podpisu"
 
-#. placeholder {0}: team.name
+#. placeholder {0}: customMailIdentity?.name || team.name
 #. placeholder {1}: document.title
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
 msgid "{0} has invited you to {recipientActionVerb} the document \"{1}\"."
 msgstr "{0} zaprosił cię do {recipientActionVerb} dokument „{1}”."
 
-#. placeholder {0}: team.name
+#. placeholder {0}: customMailIdentity?.name || team.name
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
 msgid "{0} invited you to {recipientActionVerb} a document"
 msgstr "{0} zaprosił Cię do {recipientActionVerb} dokument"
@@ -193,10 +193,6 @@ msgstr "{inviterName} zaprosił Cię do {0}<0/>\"{documentName}\""
 msgid "{inviterName} has invited you to {action} {documentName}"
 msgstr "{inviterName} zaprosił Cię do {action} {documentName}"
 
-#: packages/email/templates/document-invite.tsx
-msgid "{inviterName} has invited you to {action} the document \"{documentName}\"."
-msgstr "{inviterName} zaprosił cię do {action} dokument „{documentName}”."
-
 #: packages/email/templates/recipient-removed-from-document.tsx
 msgid "{inviterName} has removed you from the document {documentName}."
 msgstr "{inviterName} usunął Cię z dokumentu {documentName}."
@@ -205,7 +201,7 @@ msgstr "{inviterName} usunął Cię z dokumentu {documentName}."
 msgid "{inviterName} has removed you from the document<0/>\"{documentName}\""
 msgstr "{inviterName} usunął cię z dokumentu<0/>„{documentName}”"
 
-#. placeholder {0}: team.name
+#. placeholder {0}: customMailIdentity?.name || team.name
 #. placeholder {1}: document.title
 #: packages/lib/jobs/definitions/emails/send-signing-email.handler.ts
 msgid "{inviterName} on behalf of \"{0}\" has invited you to {recipientActionVerb} the document \"{1}\"."

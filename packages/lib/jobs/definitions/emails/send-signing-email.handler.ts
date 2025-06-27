@@ -85,6 +85,7 @@ export const run = async ({
   const selfSigner = email === user.email;
 
   const i18n = await getI18nInstance(documentMeta?.language);
+  const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
 
   const recipientActionVerb = i18n
     ._(RECIPIENT_ROLES_DESCRIPTION[recipient.role].actionVerb)
@@ -110,7 +111,7 @@ export const run = async ({
   }
 
   if (isTeamDocument && team) {
-    emailSubject = i18n._(msg`${team.name} invited you to ${recipientActionVerb} a document`);
+    emailSubject = i18n._(msg`${customMailIdentity?.name || team.name} invited you to ${recipientActionVerb} a document`);
     emailMessage = customEmail?.message ?? '';
 
     if (!emailMessage) {
@@ -118,8 +119,8 @@ export const run = async ({
 
       emailMessage = i18n._(
         team.teamGlobalSettings?.includeSenderDetails
-          ? msg`${inviterName} on behalf of "${team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`
-          : msg`${team.name} has invited you to ${recipientActionVerb} the document "${document.title}".`,
+          ? msg`${inviterName} on behalf of "${customMailIdentity?.name || team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`
+          : msg`${customMailIdentity?.name || team.name} has invited you to ${recipientActionVerb} the document "${document.title}".`,
       );
     }
   }
@@ -135,7 +136,7 @@ export const run = async ({
 
   const template = createElement(DocumentInviteEmailTemplate, {
     documentName: document.title,
-    inviterName: user.name || undefined,
+    inviterName: customMailIdentity?.name || user.name || undefined,
     inviterEmail: isTeamDocument ? team?.teamEmail?.email || user.email : user.email,
     assetBaseUrl,
     signDocumentLink,
@@ -143,14 +144,14 @@ export const run = async ({
     role: recipient.role,
     selfSigner,
     isTeamInvite: isTeamDocument,
-    teamName: team?.name,
+    teamName: customMailIdentity?.name || team?.name,
     teamEmail: team?.teamEmail?.email,
     includeSenderDetails: team?.teamGlobalSettings?.includeSenderDetails,
   });
 
   await io.runTask('send-signing-email', async () => {
     const branding = document.team?.teamGlobalSettings
-      ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings)
+      ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings, document.documentMeta)
       : undefined;
 
     const [html, text] = await Promise.all([
@@ -168,7 +169,7 @@ export const run = async ({
         address: recipient.email,
       },
       from: {
-        name: FROM_NAME,
+        name: customMailIdentity?.name || FROM_NAME,
         address: FROM_ADDRESS,
       },
       subject: renderCustomEmailTemplate(

@@ -78,6 +78,7 @@ export const run = async ({
 
   const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
   const i18n = await getI18nInstance(document.documentMeta?.language);
+  const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
 
   const template = createElement(DocumentRecipientSignedEmailTemplate, {
     documentName: document.title,
@@ -102,8 +103,8 @@ export const run = async ({
 
     await mailer.sendMail({
       to: {
-        name: owner.name ?? '',
-        address: owner.email,
+        name: customMailIdentity?.name ?? owner.name ?? '',
+        address: customMailIdentity?.email ?? owner.email,
       },
       from: {
         name: FROM_NAME,

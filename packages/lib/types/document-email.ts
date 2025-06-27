@@ -2,6 +2,8 @@ import type { DocumentMeta } from '@prisma/client';
 import { DocumentDistributionMethod } from '@prisma/client';
 import { z } from 'zod';
 
+import { ZCustomMailIdentitySchema } from './custom-mail-identity';
+
 export enum DocumentEmailEvents {
   RecipientSigningRequest = 'recipientSigningRequest',
   RecipientRemoved = 'recipientRemoved',
@@ -52,6 +54,7 @@ export const ZDocumentEmailSettingsSchema = z
       .boolean()
       .describe('Whether to send an email to the document owner when the document is complete.')
       .default(true),
+    customMailIdentity: ZCustomMailIdentitySchema,
   })
   .strip()
   .catch(() => ({
@@ -86,5 +89,6 @@ export const extractDerivedDocumentEmailSettings = (
     documentCompleted: false,
     documentDeleted: false,
     ownerDocumentCompleted: emailSettings.ownerDocumentCompleted,
+    customMailIdentity: emailSettings.customMailIdentity,
   };
 };

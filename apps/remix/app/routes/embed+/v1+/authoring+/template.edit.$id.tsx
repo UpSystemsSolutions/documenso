@@ -15,6 +15,7 @@ import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones'
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
 import { getTemplateById } from '@documenso/lib/server-only/template/get-template-by-id';
 import { ZDocumentEmailSettingsSchema } from '@documenso/lib/types/document-email';
+import type { TCustomMailIdentity } from '@documenso/lib/types/custom-mail-identity';
 import { nanoid } from '@documenso/lib/universal/id';
 import { trpc } from '@documenso/trpc/react';
 import { Stepper } from '@documenso/ui/primitives/stepper';
@@ -160,6 +161,7 @@ export default function EmbeddingAuthoringTemplateEditPage() {
 
   const [features, setFeatures] = useState<TBaseEmbedAuthoringSchema['features'] | null>(null);
   const [externalId, setExternalId] = useState<string | null>(null);
+  const [customMailIdentity, setCustomMailIdentity] = useState<TCustomMailIdentity | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
   const { mutateAsync: updateEmbeddingTemplate } =
@@ -211,6 +213,10 @@ export default function EmbeddingAuthoringTemplateEditPage() {
         externalId: templateExternalId,
         meta: {
           ...configuration.meta,
+          emailSettings: {
+            ...(configuration.meta?.emailSettings || {}),
+            customMailIdentity: customMailIdentity || configuration.meta?.emailSettings?.customMailIdentity || undefined,
+          },
           drawSignatureEnabled: configuration.meta.signatureTypes
             ? configuration.meta.signatureTypes.length === 0 ||
               configuration.meta.signatureTypes.includes(DocumentSignatureType.DRAW)
@@ -278,7 +284,6 @@ export default function EmbeddingAuthoringTemplateEditPage() {
 
     try {
       const hash = window.location.hash.slice(1);
-
       const parsedData = JSON.parse(decodeURIComponent(atob(hash)));
 
       const dataWithToken = {
@@ -295,9 +300,13 @@ export default function EmbeddingAuthoringTemplateEditPage() {
 
       setFeatures(result.data.features);
 
-      // Extract externalId from the parsed data if available
+      // Extract externalId and customMailIdentity from the parsed data if available
       if (result.data.externalId) {
         setExternalId(result.data.externalId);
+      }
+
+      if (result.data.customMailIdentity) {
+        setCustomMailIdentity(result.data.customMailIdentity);
       }
     } catch (err) {
       console.error('Error parsing embedding params:', err);

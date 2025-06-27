@@ -74,10 +74,12 @@ export const sendDeleteEmail = async ({ documentId, reason }: SendDeleteEmailOpt
 
   const i18n = await getI18nInstance();
 
+  const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+
   await mailer.sendMail({
     to: {
-      address: email,
-      name: name || '',
+      name: customMailIdentity?.name || name || '',
+      address: customMailIdentity?.email || email,
     },
     from: {
       name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
