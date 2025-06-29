@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import type { DropResult, SensorAPI } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
@@ -77,8 +77,9 @@ export const ConfigureDocumentRecipients = ({
       role: RecipientRole.SIGNER,
       signingOrder:
         signingOrder === DocumentSigningOrder.SEQUENTIAL ? recipientSigningOrder : undefined,
+      disabled: false,
     });
-  }, [appendSigner, signers]);
+  }, [appendSigner, signers, isTemplate, signingOrder]);
 
   const isSigningOrderEnabled = signingOrder === DocumentSigningOrder.SEQUENTIAL;
 
@@ -144,6 +145,17 @@ export const ConfigureDocumentRecipients = ({
       });
     }
   };
+
+  // Ensure all signers have an auto-generated email when editing a template
+  useEffect(() => {
+    if (isTemplate) {
+      signers.forEach((signer, idx) => {
+        if (!signer.email || signer.email.trim() === '') {
+          setValue(`signers.${idx}.email`, `recipient.${idx + 1}@document.com`);
+        }
+      });
+    }
+  }, [isTemplate, signers, setValue]);
 
   return (
     <div>
@@ -323,28 +335,32 @@ export const ConfigureDocumentRecipients = ({
                         <FormField
                           control={control}
                           name={`signers.${index}.email`}
-                          render={({ field }) => (
-                            <FormItem
-                              className={cn('flex-1', {
-                                'mb-6':
-                                  errors?.signers?.[index] && !errors?.signers?.[index]?.email,
-                              })}
-                            >
-                              <FormLabel className="sr-only">
-                                <Trans>Email</Trans>
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="email"
-                                  placeholder={_(msg`Email`)}
-                                  className="w-full"
-                                  {...field}
-                                  disabled={isSubmitting || snapshot.isDragging}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) =>
+                            isTemplate ? (
+                              <input type="hidden" {...field} />
+                            ) : (
+                              <FormItem
+                                className={cn('flex-1', {
+                                  'mb-6':
+                                    errors?.signers?.[index] && !errors?.signers?.[index]?.email,
+                                })}
+                              >
+                                <FormLabel className="sr-only">
+                                  <Trans>Email</Trans>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="email"
+                                    placeholder={_(msg`Email`)}
+                                    className="w-full"
+                                    {...field}
+                                    disabled={isSubmitting || snapshot.isDragging}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }
                         />
 
                         <FormField

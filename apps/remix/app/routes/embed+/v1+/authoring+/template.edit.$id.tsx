@@ -315,7 +315,7 @@ export default function EmbeddingAuthoringTemplateEditPage() {
 
   return (
     <div className="relative mx-auto flex min-h-[100dvh] max-w-screen-lg p-6">
-      <ConfigureDocumentProvider isTemplate={false} features={features ?? {}}>
+      <ConfigureDocumentProvider isTemplate={true} features={features ?? {}}>
         <Stepper currentStep={currentStep} setCurrentStep={setCurrentStep}>
           <ConfigureDocumentView
             defaultValues={configuration ?? undefined}
