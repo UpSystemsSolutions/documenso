@@ -91,12 +91,12 @@ export const TemplateDocumentInvite = ({
         </Text>
 
         <Section className="mb-6 mt-8 text-center">
-          <Button
+          {/* <Button
             className="mr-4 inline-flex items-center justify-center rounded-lg bg-timesavr-600 px-6 py-3 text-center text-sm font-medium text-white no-underline"
             href={rejectDocumentLink}
           >
             <Trans>Reject Document</Trans>
-          </Button>
+          </Button> */}
 
           <Button
             className="bg-timesavr-500 inline-flex items-center justify-center rounded-lg px-6 py-3 text-center text-sm font-medium text-white no-underline"

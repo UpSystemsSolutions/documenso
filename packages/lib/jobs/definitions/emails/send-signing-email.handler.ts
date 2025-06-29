@@ -172,6 +172,9 @@ export const run = async ({
         name: customMailIdentity?.name || FROM_NAME,
         address: FROM_ADDRESS,
       },
+      ...(customMailIdentity?.email
+        ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+        : {}),
       subject: renderCustomEmailTemplate(
         documentMeta?.subject || emailSubject,
         customEmailTemplate,

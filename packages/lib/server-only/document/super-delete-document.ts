@@ -98,6 +98,9 @@ export const superDeleteDocument = async ({ id, requestMetadata }: SuperDeleteDo
             name: customMailIdentity?.name || FROM_NAME,
             address: FROM_ADDRESS,
           },
+          ...(customMailIdentity?.email
+            ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+            : {}),
           subject: i18n._(msg`Document Cancelled`),
           html,
           text,

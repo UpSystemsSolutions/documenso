@@ -96,6 +96,9 @@ export const run = async ({
             name: customMailIdentity?.name || FROM_NAME,
             address: FROM_ADDRESS,
           },
+          ...(customMailIdentity?.email
+            ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+            : {}),
           subject: i18n._(msg`Document "${document.title}" Cancelled`),
           html,
           text,
