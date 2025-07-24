@@ -138,6 +138,26 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         <meta name="google" content="notranslate" />
         <Meta />
         <Links />
+        {/* Prevent dark mode flicker for embed authoring if darkModeDisabled is set in hash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+                (function() {
+                  try {
+                    var hash = window.location.hash.slice(1);
+                    if (hash) {
+                      var decoded = decodeURIComponent(atob(hash));
+                      var config = JSON.parse(decoded);
+                      if (config.darkModeDisabled) {
+                        document.documentElement.classList.add('dark-mode-disabled');
+                        document.documentElement.classList.remove('dark');
+                      }
+                    }
+                  } catch (e) {}
+                })();
+            `,
+          }}
+        />
         <meta name="google" content="notranslate" />
         <PreventFlashOnWrongTheme ssrTheme={Boolean(data.theme)} />
 
