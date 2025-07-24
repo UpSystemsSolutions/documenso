@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 
 import { prisma } from '@documenso/prisma';
-import { TemplateSchema } from '@documenso/prisma/generated/zod/modelSchema//TemplateSchema';
+import { TemplateSchema } from '@documenso/prisma/generated/zod/modelSchema/TemplateSchema';
 import type { TCreateTemplateMutationSchema } from '@documenso/trpc/server/template-router/schema';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
@@ -9,6 +9,7 @@ import { AppError, AppErrorCode } from '../../errors/app-error';
 export type CreateTemplateOptions = TCreateTemplateMutationSchema & {
   userId: number;
   teamId?: number;
+  externalId?: string;
 };
 
 export const ZCreateTemplateResponseSchema = TemplateSchema;
@@ -21,6 +22,7 @@ export const createTemplate = async ({
   teamId,
   templateDocumentDataId,
   folderId,
+  externalId,
 }: CreateTemplateOptions) => {
   let team = null;
 
@@ -84,6 +86,7 @@ export const createTemplate = async ({
       templateDocumentDataId,
       teamId,
       folderId: folderId,
+      externalId: externalId,
       templateMeta: {
         create: {
           language: team?.teamGlobalSettings?.documentLanguage,

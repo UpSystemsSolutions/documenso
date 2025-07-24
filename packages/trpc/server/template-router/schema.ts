@@ -34,6 +34,7 @@ export const ZCreateTemplateMutationSchema = z.object({
   title: z.string().min(1).trim(),
   templateDocumentDataId: z.string().min(1),
   folderId: z.string().optional(),
+  externalId: z.string().optional(),
 });
 
 export const ZCreateDocumentFromDirectTemplateRequestSchema = z.object({

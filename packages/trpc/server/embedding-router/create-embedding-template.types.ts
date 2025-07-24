@@ -12,6 +12,7 @@ import {
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 
 import {
+  ZDocumentExternalIdSchema,
   ZDocumentMetaDateFormatSchema,
   ZDocumentMetaDistributionMethodSchema,
   ZDocumentMetaDrawSignatureEnabledSchema,
@@ -61,6 +62,7 @@ export const ZCreateEmbeddingTemplateRequestSchema = z.object({
       drawSignatureEnabled: ZDocumentMetaDrawSignatureEnabledSchema.optional(),
       uploadSignatureEnabled: ZDocumentMetaUploadSignatureEnabledSchema.optional(),
       emailSettings: ZDocumentEmailSettingsSchema.optional(),
+      externalId: ZDocumentExternalIdSchema.optional(),
     })
     .optional(),
 });

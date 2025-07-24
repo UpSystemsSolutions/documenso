@@ -36,6 +36,7 @@ export const createEmbeddingTemplateRoute = procedure
         title,
         templateDocumentDataId: documentDataId,
         teamId: apiToken.teamId ?? undefined,
+        externalId: meta?.externalId ?? undefined,
       });
 
       await Promise.all(
@@ -77,16 +78,18 @@ export const createEmbeddingTemplateRoute = procedure
 
       // Update the template meta if needed
       if (meta) {
+        // Exclude externalId from meta before upserting templateMeta
+        const { externalId, ...metaWithoutExternalId } = meta;
         await prisma.templateMeta.upsert({
           where: {
             templateId: template.id,
           },
           create: {
             templateId: template.id,
-            ...meta,
+            ...metaWithoutExternalId,
           },
           update: {
-            ...meta,
+            ...metaWithoutExternalId,
           },
         });
       }

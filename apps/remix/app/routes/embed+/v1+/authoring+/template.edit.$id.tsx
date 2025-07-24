@@ -204,13 +204,13 @@ export default function EmbeddingAuthoringTemplateEditPage() {
 
       const fields = data.fields;
 
-      // Use the externalId from the URL fragment if available
-      const templateExternalId = externalId || configuration.meta.externalId;
+      // Use the externalId from the form if provided, otherwise keep the original
+      const templateExternalId = externalId?.trim() ? externalId : template.externalId;
 
       const updateResult = await updateEmbeddingTemplate({
         templateId: template.id,
         title: configuration.title,
-        externalId: templateExternalId,
+        externalId: templateExternalId ?? undefined,
         meta: {
           ...configuration.meta,
           emailSettings: {
