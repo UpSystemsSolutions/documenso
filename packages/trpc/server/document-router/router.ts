@@ -117,6 +117,8 @@ export const documentRouter = router({
         source,
         status,
         folderId,
+        title,
+        externalIdParts,
       } = input;
 
       const documents = await findDocuments({
@@ -129,6 +131,8 @@ export const documentRouter = router({
         page,
         perPage,
         folderId,
+        title,
+        externalIdParts: externalIdParts,
         orderBy: orderByColumn ? { column: orderByColumn, direction: orderByDirection } : undefined,
       });
 

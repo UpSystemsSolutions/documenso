@@ -28,6 +28,8 @@ export type FindDocumentsOptions = {
   senderIds?: number[];
   query?: string;
   folderId?: string;
+  title?: string;
+  externalIdParts?: string;
 };
 
 export const findDocuments = async ({
@@ -43,6 +45,8 @@ export const findDocuments = async ({
   senderIds,
   query = '',
   folderId,
+  title,
+  externalIdParts,
 }: FindDocumentsOptions) => {
   const user = await prisma.user.findFirstOrThrow({
     where: {
@@ -207,6 +211,25 @@ export const findDocuments = async ({
     whereAndClause.push({
       source,
     });
+  }
+
+  if (title) {
+    whereAndClause.push({
+      title: { contains: title, mode: 'insensitive' },
+    });
+  }
+
+  if (externalIdParts) {
+    const parts = externalIdParts
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+
+    for (const part of parts) {
+      whereAndClause.push({
+        externalId: { contains: part, mode: 'insensitive' }
+      });
+    }
   }
 
   const whereClause: Prisma.DocumentWhereInput = {

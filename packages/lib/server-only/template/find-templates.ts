@@ -13,6 +13,8 @@ export type FindTemplatesOptions = {
   page?: number;
   perPage?: number;
   folderId?: string;
+  title?: string;
+  externalIdParts?: string;
 };
 
 export const findTemplates = async ({
@@ -22,6 +24,8 @@ export const findTemplates = async ({
   page = 1,
   perPage = 10,
   folderId,
+  title,
+  externalIdParts,
 }: FindTemplatesOptions) => {
   const whereFilter: Prisma.TemplateWhereInput[] = [];
 
@@ -75,6 +79,24 @@ export const findTemplates = async ({
     whereFilter.push({ folderId: null });
   }
 
+  if (externalIdParts) {
+    const parts = externalIdParts
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+    for (const part of parts) {
+      whereFilter.push({
+        externalId: { contains: part, mode: 'insensitive' },
+      });
+    }
+  }
+
+  if (title) {
+    whereFilter.push({
+      title: { contains: title, mode: 'insensitive' },
+    });
+  }
+
   const [data, count] = await Promise.all([
     prisma.template.findMany({
       where: {
@@ -99,6 +121,7 @@ export const findTemplates = async ({
         },
       },
       skip: Math.max(page - 1, 0) * perPage,
+      take: perPage,
       orderBy: {
         createdAt: 'desc',
       },
