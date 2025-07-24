@@ -1,9 +1,9 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { DocumentDistributionMethod, DocumentSigningOrder, SigningStatus } from '@prisma/client';
-import { redirect, useLoaderData } from 'react-router';
+import { redirect, useLoaderData, useOutletContext} from 'react-router';
 
 import {
   DEFAULT_DOCUMENT_DATE_FORMAT,
@@ -15,6 +15,7 @@ import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones'
 import { getDocumentWithDetailsById } from '@documenso/lib/server-only/document/get-document-with-details-by-id';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
 import { ZDocumentEmailSettingsSchema } from '@documenso/lib/types/document-email';
+import type { TCustomMailIdentity } from '@documenso/lib/types/custom-mail-identity';
 import { nanoid } from '@documenso/lib/universal/id';
 import { trpc } from '@documenso/trpc/react';
 import { Stepper } from '@documenso/ui/primitives/stepper';
@@ -32,6 +33,9 @@ import {
 
 import type { Route } from './+types/document.edit.$id';
 
+interface ContextType {
+  token: string;
+}
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const { id } = params;
 
@@ -84,6 +88,7 @@ export default function EmbeddingAuthoringDocumentEditPage() {
   const { toast } = useToast();
 
   const { document } = useLoaderData<typeof loader>();
+  const { token } = useOutletContext<ContextType>();
 
   const signatureTypes = useMemo(() => {
     const types: string[] = [];
@@ -155,6 +160,7 @@ export default function EmbeddingAuthoringDocumentEditPage() {
 
   const [features, setFeatures] = useState<TBaseEmbedAuthoringSchema['features'] | null>(null);
   const [externalId, setExternalId] = useState<string | null>(null);
+  const [customMailIdentity, setCustomMailIdentity] = useState<TCustomMailIdentity | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
   const { mutateAsync: updateEmbeddingDocument } =
@@ -197,15 +203,19 @@ export default function EmbeddingAuthoringDocumentEditPage() {
 
       const fields = data.fields;
 
-      // Use the externalId from the URL fragment if available
-      const documentExternalId = externalId || configuration.meta.externalId;
+      // Use the externalId from the form if provided, otherwise keep the original
+      const documentExternalId = externalId?.trim() ? externalId : document.externalId;
 
       const updateResult = await updateEmbeddingDocument({
         documentId: document.id,
         title: configuration.title,
-        externalId: documentExternalId,
+        externalId: documentExternalId ?? undefined,
         meta: {
           ...configuration.meta,
+          emailSettings: {
+            ...(configuration.meta?.emailSettings || {}),
+            customMailIdentity: customMailIdentity || configuration.meta?.emailSettings?.customMailIdentity || undefined,
+          },
           drawSignatureEnabled: configuration.meta.signatureTypes
             ? configuration.meta.signatureTypes.length === 0 ||
               configuration.meta.signatureTypes.includes(DocumentSignatureType.DRAW)
@@ -267,15 +277,22 @@ export default function EmbeddingAuthoringDocumentEditPage() {
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     try {
       const hash = window.location.hash.slice(1);
+      const parsedData = JSON.parse(decodeURIComponent(atob(hash)));
 
-      const result = ZBaseEmbedAuthoringSchema.safeParse(
-        JSON.parse(decodeURIComponent(atob(hash))),
-      );
+      const dataWithToken = {
+        ...parsedData,
+        token: token,
+      };
+
+      const result = ZBaseEmbedAuthoringSchema.safeParse(dataWithToken);
 
       if (!result.success) {
+        console.error('Schema validation failed:', result.error);
         return;
       }
 
@@ -284,6 +301,10 @@ export default function EmbeddingAuthoringDocumentEditPage() {
       // Extract externalId from the parsed data if available
       if (result.data.externalId) {
         setExternalId(result.data.externalId);
+      }
+
+      if (result.data.customMailIdentity) {
+        setCustomMailIdentity(result.data.customMailIdentity);
       }
     } catch (err) {
       console.error('Error parsing embedding params:', err);

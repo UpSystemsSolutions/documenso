@@ -228,15 +228,17 @@ const handleDocumentOwnerDelete = async ({
 
       const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
 
+      const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+
       const template = createElement(DocumentCancelTemplate, {
         documentName: document.title,
-        inviterName: user.name || undefined,
+        inviterName: customMailIdentity?.name || user.name || undefined,
         inviterEmail: user.email,
         assetBaseUrl,
       });
 
       const branding = team?.teamGlobalSettings
-        ? teamGlobalSettingsToBranding(team.teamGlobalSettings)
+        ? teamGlobalSettingsToBranding(team.teamGlobalSettings, document.documentMeta)
         : undefined;
 
       const [html, text] = await Promise.all([
@@ -249,8 +251,6 @@ const handleDocumentOwnerDelete = async ({
       ]);
 
       const i18n = await getI18nInstance(document.documentMeta?.language);
-
-      const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
 
       await mailer.sendMail({
         to: {

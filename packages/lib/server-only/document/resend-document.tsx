@@ -108,6 +108,7 @@ export const resendDocument = async ({
       }
 
       const i18n = await getI18nInstance(document.documentMeta?.language);
+      const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
 
       const recipientEmailType = RECIPIENT_ROLE_TO_EMAIL_TYPE[recipient.role];
 
@@ -130,13 +131,15 @@ export const resendDocument = async ({
 
       if (isTeamDocument && document.team) {
         emailSubject = i18n._(
-          msg`Reminder: ${document.team.name} invited you to ${recipientActionVerb} a document`,
+          msg`Reminder: ${customMailIdentity?.name || document.team.name} invited you to ${recipientActionVerb} a document`,
         );
         emailMessage =
           customEmail?.message ||
           i18n._(
-            msg`${user.name || user.email} on behalf of "${document.team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`,
-          );
+          document.team.teamGlobalSettings?.includeSenderDetails
+            ? msg`${user.name || user.email} on behalf of "${customMailIdentity?.name || document.team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`
+            : msg`${customMailIdentity?.name || document.team.name} has invited you to ${recipientActionVerb} the document "${document.title}".`,
+        );
       }
 
       const customEmailTemplate = {
@@ -162,7 +165,7 @@ export const resendDocument = async ({
       });
 
       const branding = document.team?.teamGlobalSettings
-        ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings)
+        ? teamGlobalSettingsToBranding(document.team.teamGlobalSettings, document.documentMeta)
         : undefined;
 
       const [html, text] = await Promise.all([
@@ -185,7 +188,7 @@ export const resendDocument = async ({
               name,
             },
             from: {
-              name: FROM_NAME,
+              name: customMailIdentity?.name || FROM_NAME,
               address: FROM_ADDRESS,
             },
             subject: customEmail?.subject

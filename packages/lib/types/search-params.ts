@@ -11,6 +11,8 @@ export const ZFindSearchParamsSchema = z.object({
   query: z.string().describe('The search query.').optional(),
   page: z.coerce.number().min(1).describe('The pagination page number, starts at 1.').optional(),
   perPage: z.coerce.number().min(1).describe('The number of items per page.').max(100).optional(),
+  title: z.string().optional().describe('Value to match in the title.'),
+  externalIdParts: z.string().optional().describe('Comma separated parts to match in externalId.'),
 });
 
 /**
@@ -32,6 +34,14 @@ export const ZUrlSearchParamsSchema = z.object({
     .number()
     .min(1)
     .max(100)
+    .optional()
+    .catch(() => undefined),
+  title: z
+    .string()
+    .optional()
+    .catch(() => undefined),
+  externalIdParts: z
+    .string()
     .optional()
     .catch(() => undefined),
 });
