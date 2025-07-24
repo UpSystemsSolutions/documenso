@@ -263,7 +263,6 @@ export default function EmbeddingAuthoringTemplateEditPage() {
             type: 'template-updated',
             templateId: updateResult.templateId,
             externalId: templateExternalId,
-            title: configuration.title,
           },
           '*',
         );

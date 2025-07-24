@@ -116,7 +116,6 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
             type: 'template-created',
             templateId: createResult.templateId,
             externalId: metaWithExternalId.externalId,
-            title: configuration.title,
           },
           '*',
         );

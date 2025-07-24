@@ -33,29 +33,20 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 export default function AuthoringLayout() {
   const { hasValidToken, token } = useLoaderData<typeof loader>();
 
-  useEffect(() => { // Changed from useLayoutEffect
-    if (typeof window === 'undefined') return; // Add this check for SSR
-
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
     try {
       const hash = window.location.hash.slice(1);
-
-      console.log('Raw hash:', hash);
-
       const decodedHash = decodeURIComponent(atob(hash));
-      console.log('Decoded hash:', decodedHash);
-
       const parsedData = JSON.parse(decodedHash);
-      console.log('Parsed data:', parsedData);
 
       const dataWithToken = {
         ...parsedData,
         token: token,
       };
-      console.log('Data with token:', dataWithToken);
 
       const result = ZBaseEmbedAuthoringSchema.safeParse(dataWithToken);
-      console.log('Schema parse result:', result);
 
       if (!result.success) {
         console.error('Schema validation failed:', result.error);
@@ -63,22 +54,17 @@ export default function AuthoringLayout() {
       }
 
       const { css, cssVars, darkModeDisabled, features } = result.data;
-      console.log('Extracted config:', { css, cssVars, darkModeDisabled, features });
 
-      // Apply dark mode class immediately if disabled
       if (darkModeDisabled) {
-        console.log('Attempting to disable dark mode');
         document.documentElement.classList.add('dark-mode-disabled');
       }
 
       // Always apply the CSS regardless of plan
       if (css || cssVars) {
-        console.log('Applying CSS customizations');
         injectCss({ css, cssVars });
       }
-
     } catch (error) {
-      console.error('Error in layout effect:', error);
+      console.error(error);
     }
   }, []);
 
