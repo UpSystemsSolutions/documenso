@@ -157,8 +157,8 @@ msgstr "{0} des {1} documents restants ce mois-ci."
 msgid "{0} of {1} row(s) selected."
 msgstr "{0} sur {1} ligne(s) sélectionnée(s)."
 
-#. placeholder {0}: user.name || user.email
-#. placeholder {1}: customMailIdentity?.name || document.team.name
+#. placeholder {0}: customMailIdentity?.name || customMailIdentity?.email || user.name || user.email
+#. placeholder {1}: document.team.name
 #. placeholder {2}: document.title
 #: packages/lib/server-only/document/resend-document.tsx
 msgid "{0} on behalf of \"{1}\" has invited you to {recipientActionVerb} the document \"{2}\"."
@@ -369,11 +369,11 @@ msgstr "{signerName} a rejeté le document \"{documentName}\"."
 #. placeholder {0}: _(actionVerb).toLowerCase()
 #: packages/email/template-components/template-document-invite.tsx
 msgid "{teamName} has invited you to {0}<0/>\"{documentName}\""
-msgstr "{teamName} vous a invité à {0}<0/>\"{documentName}\""
+msgstr ""
 
 #: packages/email/templates/document-invite.tsx
 msgid "{teamName} has invited you to {action} {documentName}"
-msgstr "{teamName} vous a invité à {action} {documentName}"
+msgstr ""
 
 #: packages/email/templates/team-transfer-request.tsx
 msgid "{teamName} ownership transfer request"

@@ -137,7 +137,7 @@ export const resendDocument = async ({
           customEmail?.message ||
           i18n._(
           document.team.teamGlobalSettings?.includeSenderDetails
-            ? msg`${user.name || user.email} on behalf of "${customMailIdentity?.name || document.team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`
+            ? msg`${customMailIdentity?.name || customMailIdentity?.email || user.name || user.email} on behalf of "${document.team.name}" has invited you to ${recipientActionVerb} the document "${document.title}".`
             : msg`${customMailIdentity?.name || document.team.name} has invited you to ${recipientActionVerb} the document "${document.title}".`,
         );
       }
@@ -153,15 +153,16 @@ export const resendDocument = async ({
 
       const template = createElement(DocumentInviteEmailTemplate, {
         documentName: document.title,
-        inviterName: user.name || undefined,
-        inviterEmail: isTeamDocument ? document.team?.teamEmail?.email || user.email : user.email,
+        inviterName: customMailIdentity?.name || (isTeamDocument ? document.team?.name : user.name) || undefined,
+        inviterEmail: isTeamDocument ? customMailIdentity?.email || document.team?.teamEmail?.email || user.email : customMailIdentity?.email || user.email,
         assetBaseUrl,
         signDocumentLink,
         customBody: renderCustomEmailTemplate(emailMessage, customEmailTemplate),
         role: recipient.role,
         selfSigner,
         isTeamInvite: isTeamDocument,
-        teamName: document.team?.name,
+        teamName: customMailIdentity?.name || document.team?.name,
+        includeSenderDetails: document.team?.teamGlobalSettings?.includeSenderDetails,
       });
 
       const branding = document.team?.teamGlobalSettings
