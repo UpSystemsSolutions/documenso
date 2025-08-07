@@ -107,7 +107,7 @@ module.exports = {
           900: '#364772',
           950: '#252d46',
         },
-        timesavr: {
+        kinderlogix: {
           DEFAULT: '#2d3748',
           400: '#edf2f7', // Light gray background color
           500: '#2d3748', // Dark gray primary button color
