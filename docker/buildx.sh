@@ -21,10 +21,16 @@ echo "Building docker image for monorepo at $MONOREPO_ROOT"
 echo "App version: $APP_VERSION"
 echo "Git SHA: $GIT_SHA"
 
+# Get the build target from environment variable or set to runner if not set
+if [ -z "$TARGET" ]; then
+    TARGET="runner"
+fi
+
 # Build with temporary base tag
 docker buildx build \
     -f "$SCRIPT_DIR/Dockerfile" \
     --platform=$PLATFORM \
+    --target=$TARGET \
     --progress=plain \
     -t "documenso-base" \
     "$MONOREPO_ROOT"
@@ -32,7 +38,7 @@ docker buildx build \
 # Handle repository tagging
 if [ ! -z "$DOCKER_REPOSITORY" ]; then
     echo "Using custom repository: $DOCKER_REPOSITORY"
-    
+
     # Add tags for custom repository
     docker tag "documenso-base" "$DOCKER_REPOSITORY:latest"
     docker tag "documenso-base" "$DOCKER_REPOSITORY:$GIT_SHA"
@@ -43,7 +49,7 @@ if [ ! -z "$DOCKER_REPOSITORY" ]; then
     fi
 else
     echo "Using default repositories: dockerhub and ghcr.io"
-    
+
     # Add tags for both default repositories
     docker tag "documenso-base" "documenso/documenso:latest"
     docker tag "documenso-base" "documenso/documenso:$GIT_SHA"
