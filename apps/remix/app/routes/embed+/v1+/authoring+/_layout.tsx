@@ -34,8 +34,6 @@ export default function AuthoringLayout() {
   const { hasValidToken, token } = useLoaderData<typeof loader>();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     try {
       const hash = window.location.hash.slice(1);
       const decodedHash = decodeURIComponent(atob(hash));

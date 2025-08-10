@@ -26,6 +26,7 @@ import { ConfigureDocumentView } from '~/components/embed/authoring/configure-do
 import type { TConfigureEmbedFormSchema } from '~/components/embed/authoring/configure-document-view.types';
 import { ConfigureFieldsView } from '~/components/embed/authoring/configure-fields-view';
 import type { TConfigureFieldsFormSchema } from '~/components/embed/authoring/configure-fields-view.types';
+import { EmbedClientLoading } from '~/components/embed/embed-client-loading';
 import {
   type TBaseEmbedAuthoringSchema,
   ZBaseEmbedAuthoringSchema,
@@ -162,6 +163,7 @@ export default function EmbeddingAuthoringDocumentEditPage() {
   const [externalId, setExternalId] = useState<string | null>(null);
   const [customMailIdentity, setCustomMailIdentity] = useState<TCustomMailIdentity | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [hasFinishedInit, setHasFinishedInit] = useState(false);
 
   const { mutateAsync: updateEmbeddingDocument } =
     trpc.embeddingPresign.updateEmbeddingDocument.useMutation();
@@ -278,58 +280,48 @@ export default function EmbeddingAuthoringDocumentEditPage() {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     try {
       const hash = window.location.hash.slice(1);
       const parsedData = JSON.parse(decodeURIComponent(atob(hash)));
-
-      const dataWithToken = {
-        ...parsedData,
-        token: token,
-      };
-
+      const dataWithToken = { ...parsedData, token };
       const result = ZBaseEmbedAuthoringSchema.safeParse(dataWithToken);
-
       if (!result.success) {
         console.error('Schema validation failed:', result.error);
         return;
       }
-
       setFeatures(result.data.features);
-
-      // Extract externalId from the parsed data if available
-      if (result.data.externalId) {
-        setExternalId(result.data.externalId);
-      }
-
-      if (result.data.customMailIdentity) {
-        setCustomMailIdentity(result.data.customMailIdentity);
-      }
+      if (result.data.externalId) setExternalId(result.data.externalId);
+      if (result.data.customMailIdentity) setCustomMailIdentity(result.data.customMailIdentity);
     } catch (err) {
       console.error('Error parsing embedding params:', err);
+    } finally {
+      setHasFinishedInit(true);
     }
-  }, []);
+  }, [token]);
 
   return (
     <div className="relative mx-auto flex min-h-[100dvh] max-w-screen-lg p-6">
-      <ConfigureDocumentProvider isTemplate={false} features={features ?? {}}>
-        <Stepper currentStep={currentStep} setCurrentStep={setCurrentStep}>
-          <ConfigureDocumentView
-            defaultValues={configuration ?? undefined}
-            disableUpload={true}
-            onSubmit={handleConfigurePageViewSubmit}
-          />
+      {!hasFinishedInit ? (
+        <EmbedClientLoading />
+      ) : (
+        <ConfigureDocumentProvider isTemplate={false} features={features ?? {}}>
+          <Stepper currentStep={currentStep} setCurrentStep={setCurrentStep}>
+            <ConfigureDocumentView
+              defaultValues={configuration ?? undefined}
+              disableUpload={true}
+              onSubmit={handleConfigurePageViewSubmit}
+            />
 
-          <ConfigureFieldsView
-            configData={configuration!}
-            documentData={document.documentData}
-            defaultValues={fields ?? undefined}
-            onBack={handleBackToConfig}
-            onSubmit={handleConfigureFieldsSubmit}
-          />
-        </Stepper>
-      </ConfigureDocumentProvider>
+            <ConfigureFieldsView
+              configData={configuration!}
+              documentData={document.documentData}
+              defaultValues={fields ?? undefined}
+              onBack={handleBackToConfig}
+              onSubmit={handleConfigureFieldsSubmit}
+            />
+          </Stepper>
+        </ConfigureDocumentProvider>
+      )}
     </div>
   );
 }
