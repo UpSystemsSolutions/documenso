@@ -93,29 +93,6 @@ export const GenericErrorLayout = ({
           <p className="text-muted-foreground mt-4 text-sm">{_(message)}</p>
 
           <div className="mt-6 flex gap-x-2.5 gap-y-4 md:items-center">
-            {secondaryButton ||
-              (secondaryButton !== null && (
-                <Button
-                  variant="ghost"
-                  className="w-32"
-                  onClick={() => {
-                    void navigate(-1);
-                  }}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  <Trans>Go Back</Trans>
-                </Button>
-              ))}
-
-            {primaryButton ||
-              (primaryButton !== null && (
-                <Button asChild>
-                  <Link to={formatDocumentsPath(team?.url)}>
-                    <Trans>Documents</Trans>
-                  </Link>
-                </Button>
-              ))}
-
             {children}
           </div>
         </div>
