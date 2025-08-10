@@ -320,12 +320,30 @@ export const ConfigureDocumentRecipients = ({
                                 <Trans>Name</Trans>
                               </FormLabel>
                               <FormControl>
-                                <Input
-                                  placeholder={_(msg`Name`)}
-                                  className="w-full"
-                                  {...field}
-                                  disabled={isSubmitting || snapshot.isDragging}
-                                />
+                                <div className="flex items-center">
+                                  <Input
+                                    placeholder={_(msg`Name`)}
+                                    className="w-full"
+                                    {...field}
+                                    disabled={isSubmitting || snapshot.isDragging}
+                                  />
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-muted-foreground ml-1 mb-10 cursor-help">
+                                        <HelpCircle className="h-3.5 w-3.5" />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-80 p-4">
+                                      <p>
+                                        <Trans>
+                                          This label identifies the recipient in your template but is not shown to the signer.
+                                          It’s prefilled for you (e.g., “Recipient 1”), but you can change it to something
+                                          more descriptive like “Parent” or “Signer.” Avoid using personal names.
+                                        </Trans>
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>

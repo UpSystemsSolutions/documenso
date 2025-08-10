@@ -324,6 +324,16 @@ export const ConfigureDocumentAdvancedSettings = ({
                         <Trans>
                           Message <span className="text-muted-foreground">(Optional)</span>
                         </Trans>
+                        <Tooltip>
+                        <TooltipTrigger>
+                          <InfoIcon className="text-muted-foreground mx-2 h-4 w-4" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <Trans>
+                            Appears below the “Sign Document” button and can include extra instructions or a friendly message for the recipient.
+                          </Trans>
+                        </TooltipContent>
+                      </Tooltip>
                       </FormLabel>
                       <FormControl>
                         <Textarea
