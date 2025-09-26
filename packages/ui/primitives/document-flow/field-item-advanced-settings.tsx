@@ -230,7 +230,7 @@ export const FieldAdvancedSettings = forwardRef<HTMLDivElement, FieldAdvancedSet
       <div ref={ref} className="flex h-full flex-col">
         <DocumentFlowFormContainerHeader title={title} description={description} />
 
-        <DocumentFlowFormContainerContent>
+        <DocumentFlowFormContainerContent className="overflow-y-auto min-h-[40vh]">
           {isDocumentPdfLoaded &&
             fields.map((localField, index) => (
               <span key={index} className="opacity-75 active:pointer-events-none">
