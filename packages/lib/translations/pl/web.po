@@ -1590,10 +1590,6 @@ msgstr "Wybierz odbiorcę bezpośredniego linku"
 msgid "Choose how the document will reach recipients"
 msgstr "Wybierz, jak dokument dotrze do odbiorców"
 
-#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
-msgid "Choose how to distribute your document to recipients. Email will send notifications, None will generate signing links for manual distribution."
-msgstr ""
-
 #: apps/remix/app/components/forms/token.tsx
 msgid "Choose..."
 msgstr "Wybierz..."
@@ -1662,10 +1658,6 @@ msgstr "Kliknij, aby wstawić pole"
 #: packages/ui/primitives/document-flow/missing-signature-field-dialog.tsx
 msgid "Close"
 msgstr "Zamknij"
-
-#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
-msgid "Communication"
-msgstr ""
 
 #: apps/remix/app/components/general/document-signing/document-signing-complete-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-complete-dialog.tsx
@@ -2324,10 +2316,6 @@ msgstr "Wyświetl swoją nazwę i adres e-mail w dokumentach"
 msgid "Distribute Document"
 msgstr "Rozprowadź dokument"
 
-#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
-msgid "Distribution Method"
-msgstr ""
-
 #: apps/remix/app/components/dialogs/template-delete-dialog.tsx
 msgid "Do you want to delete this template?"
 msgstr "Czy chcesz usunąć ten szablon?"
@@ -2775,7 +2763,6 @@ msgstr "Ujawnienie podpisu elektronicznego"
 #: apps/remix/app/components/embed/embed-direct-template-client-page.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-recipients.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-recipients.tsx
-#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
 #: apps/remix/app/components/dialogs/template-use-dialog.tsx
 #: apps/remix/app/components/dialogs/template-use-dialog.tsx
 #: apps/remix/app/components/dialogs/team-email-update-dialog.tsx
@@ -2814,6 +2801,7 @@ msgstr "E-mail nie może już istnieć w szablonie"
 msgid "Email Confirmed!"
 msgstr "E-mail potwierdzony!"
 
+#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
 #: packages/ui/primitives/template-flow/add-template-settings.tsx
 msgid "Email Options"
 msgstr "Opcje e-mail"
@@ -3926,7 +3914,6 @@ msgstr "Nie znaleziono wartości."
 msgid "No worries, it happens! Enter your email and we'll email you a special link to reset your password."
 msgstr "Nie martw się, to się zdarza! Wprowadź swój e-mail, a my wyślemy Ci specjalny link do zresetowania hasła."
 
-#: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
 #: packages/lib/constants/document.ts
 msgid "None"
 msgstr "Brak"

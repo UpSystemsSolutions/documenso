@@ -75,7 +75,7 @@ export const ConfigureDocumentAdvancedSettings = ({
 
           {features.allowConfigureCommunication && (
             <TabsTrigger value="communication" className="px-4">
-              <Trans>Communication</Trans>
+              <Trans>Email Options</Trans>
             </TabsTrigger>
           )}
         </TabsList>
@@ -250,44 +250,21 @@ export const ConfigureDocumentAdvancedSettings = ({
 
         {features.allowConfigureCommunication && (
           <TabsContent value="communication" className="mt-0">
-            <div className="flex flex-col space-y-6">
               <FormField
                 control={control}
                 name="meta.distributionMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      <Trans>Distribution Method</Trans>
-                    </FormLabel>
-
                     <FormControl>
-                      <Select {...field} onValueChange={field.onChange} disabled={isSubmitting}>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={DocumentDistributionMethod.EMAIL}>
-                            <Trans>Email</Trans>
-                          </SelectItem>
-                          <SelectItem value={DocumentDistributionMethod.NONE}>
-                            <Trans>None</Trans>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <input type="hidden" {...field} value={DocumentDistributionMethod.EMAIL} />
                     </FormControl>
-
-                    <FormDescription>
-                      <Trans>
-                        Choose how to distribute your document to recipients. Email will send
-                        notifications, None will generate signing links for manual distribution.
-                      </Trans>
-                    </FormDescription>
 
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+            <div className="flex flex-col space-y-6">
               <fieldset
                 className="flex flex-col space-y-6 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!isEmailDistribution}

@@ -19,6 +19,7 @@ import {
 import type { CompletedField } from '@documenso/lib/types/fields';
 import type { FieldWithSignatureAndFieldMeta } from '@documenso/prisma/types/field-with-signature-and-fieldmeta';
 import type { RecipientWithFields } from '@documenso/prisma/types/recipient-with-fields';
+import type { TCustomMailIdentity } from '@documenso/lib/types/custom-mail-identity';
 import { DocumentReadOnlyFields } from '@documenso/ui/components/document/document-read-only-fields';
 import { Card, CardContent } from '@documenso/ui/primitives/card';
 import { ElementVisible } from '@documenso/ui/primitives/element-visible';
@@ -64,12 +65,17 @@ export const DocumentSigningPageView = ({
   const shouldUseTeamDetails =
     document.teamId && document.team?.teamGlobalSettings?.includeSenderDetails === false;
 
-  let senderName = document.user.name ?? '';
-  let senderEmail = `(${document.user.email})`;
+  const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
+
+  let senderName = customMailIdentity?.name ?? document.user.name ?? '';
+  const userEmail = customMailIdentity?.email ?? document.user.email ?? '';
+  let senderEmail = userEmail ? `(${userEmail})` : '';
 
   if (shouldUseTeamDetails) {
-    senderName = document.team?.name ?? '';
-    senderEmail = document.team?.teamEmail?.email ? `(${document.team.teamEmail.email})` : '';
+    senderName = customMailIdentity?.name ?? document.team?.name ?? '';
+    const teamEmailAddress = document.team?.teamEmail?.email;
+    const effectiveEmail = customMailIdentity?.email ?? teamEmailAddress;
+    senderEmail = effectiveEmail ? `(${effectiveEmail})` : '';
   }
 
   const selectedSigner = allRecipients?.find((r) => r.id === selectedSignerId);

@@ -320,7 +320,7 @@ export const ConfigureDocumentRecipients = ({
                                 <Trans>Name</Trans>
                               </FormLabel>
                               <FormControl>
-                                <div className="flex items-center">
+                                <div className="flex items-end">
                                   <Input
                                     placeholder={_(msg`Name`)}
                                     className="w-full"
@@ -329,7 +329,7 @@ export const ConfigureDocumentRecipients = ({
                                   />
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <span className="text-muted-foreground ml-1 mb-10 cursor-help">
+                                      <span className="text-muted-foreground ml-1 mb-8 cursor-help">
                                         <HelpCircle className="h-3.5 w-3.5" />
                                       </span>
                                     </TooltipTrigger>
