@@ -238,7 +238,12 @@ export const ConfigureDocumentAdvancedSettings = ({
                       </Tooltip>
                     </FormLabel>
                     <FormControl>
-                      <Input className="bg-background" {...field} disabled={isSubmitting} />
+                      <Input
+                        className="bg-background"
+                        placeholder={_('e.g. https://example.com/thank-you')}
+                        {...field}
+                        disabled={isSubmitting}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
