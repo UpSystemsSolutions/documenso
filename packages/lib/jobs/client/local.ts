@@ -1,5 +1,5 @@
 import { sha256 } from '@noble/hashes/sha256';
-import { BackgroundJobStatus, Prisma } from '@prisma/client';
+import { BackgroundJobStatus, BackgroundJobTaskStatus, Prisma } from '@prisma/client';
 import type { Context as HonoContext } from 'hono';
 
 import { prisma } from '@documenso/prisma';
@@ -45,10 +45,10 @@ export class LocalJobProvider extends BaseJobProvider {
       (job) => job.trigger.name === options.name,
     );
 
+    // Create jobs synchronously so they’re persisted, then dispatch execution in the background.
+    // We intentionally do NOT await execution here.
     await Promise.all(
       eligibleJobs.map(async (job) => {
-        // Ideally we will change this to a createMany with returning later once we upgrade Prisma
-        // @see: https://github.com/prisma/prisma/releases/tag/5.14.0
         const pendingJob = await prisma.backgroundJob.create({
           data: {
             jobId: job.id,
@@ -59,10 +59,15 @@ export class LocalJobProvider extends BaseJobProvider {
           },
         });
 
-        await this.submitJobToEndpoint({
+        void this.submitJobToEndpoint({
           jobId: pendingJob.id,
           jobDefinitionId: pendingJob.jobId,
           data: options,
+        }).catch((err) => {
+          console.error(
+            `[JOBS]: Error dispatching job ${pendingJob.jobId}/${pendingJob.id} (${options.name})`,
+            err,
+          );
         });
       }),
     );
@@ -76,9 +81,16 @@ export class LocalJobProvider extends BaseJobProvider {
         return c.text('Method not allowed', 405);
       }
 
-      const jobId = req.header('x-job-id');
+      const jobIdHeader = req.header('x-job-id');
       const signature = req.header('x-job-signature');
       const isRetry = req.header('x-job-retry') !== undefined;
+      const retrySource = req.header('x-job-retry-source');
+      const isAdminRetry = isRetry && retrySource === 'admin';
+
+      // The internal route is /api/jobs/:jobDefinitionId/:jobId
+      const jobDefinitionId = req.param('jobDefinitionId');
+      const jobIdParam = req.param('jobId');
+      const jobId = jobIdHeader ?? jobIdParam;
 
       const options = await req
         .json()
@@ -91,13 +103,22 @@ export class LocalJobProvider extends BaseJobProvider {
         return c.text('Bad request', 400);
       }
 
-      const definition = this._jobDefinitions[options.name];
+      const definition =
+        typeof jobDefinitionId === 'string' ? this._jobDefinitions[jobDefinitionId] : undefined;
 
-      if (
-        typeof jobId !== 'string' ||
-        typeof signature !== 'string' ||
-        typeof options !== 'object'
-      ) {
+      if (typeof jobId !== 'string') {
+        return c.text('Bad request', 400);
+      }
+
+      if (typeof signature !== 'string') {
+        return c.text('Bad request', 400);
+      }
+
+      if (typeof jobDefinitionId !== 'string') {
+        return c.text('Bad request', 400);
+      }
+
+      if (typeof options !== 'object') {
         return c.text('Bad request', 400);
       }
 
@@ -106,8 +127,6 @@ export class LocalJobProvider extends BaseJobProvider {
       }
 
       if (definition && !definition.enabled) {
-        console.log('Attempted to trigger a disabled job', options.name);
-
         return c.text('Job not found', 404);
       }
 
@@ -123,27 +142,34 @@ export class LocalJobProvider extends BaseJobProvider {
         }
       }
 
-      console.log(`[JOBS]: Triggering job ${options.name} with payload`, options.payload);
+      // Avoid dumping sensitive payloads in logs.
+      if (isAdminRetry) {
+        console.log(`[JOBS]: Triggering job ${definition.id} (${definition.name}) [admin retry]`);
+      }
 
-      let backgroundJob = await prisma.backgroundJob
-        .update({
-          where: {
-            id: jobId,
-            status: BackgroundJobStatus.PENDING,
-          },
-          data: {
-            status: BackgroundJobStatus.PROCESSING,
-            retried: {
-              increment: isRetry ? 1 : 0,
-            },
-            lastRetriedAt: isRetry ? new Date() : undefined,
-          },
-        })
-        .catch(() => null);
+      const existingJob = await prisma.backgroundJob.findUnique({
+        where: { id: jobId },
+      });
 
-      if (!backgroundJob) {
+      if (!existingJob) {
         return c.text('Job not found', 404);
       }
+
+      // Transition to PROCESSING regardless of previous state (except COMPLETED).
+      if (existingJob.status === BackgroundJobStatus.COMPLETED) {
+        return c.text('OK', 200);
+      }
+
+      let backgroundJob = await prisma.backgroundJob.update({
+        where: { id: jobId },
+        data: {
+          status: BackgroundJobStatus.PROCESSING,
+          retried: {
+            increment: isRetry ? 1 : 0,
+          },
+          lastRetriedAt: isRetry ? new Date() : undefined,
+        },
+      });
 
       try {
         await definition.handler({
@@ -154,7 +180,6 @@ export class LocalJobProvider extends BaseJobProvider {
         backgroundJob = await prisma.backgroundJob.update({
           where: {
             id: jobId,
-            status: BackgroundJobStatus.PROCESSING,
           },
           data: {
             status: BackgroundJobStatus.COMPLETED,
@@ -162,7 +187,10 @@ export class LocalJobProvider extends BaseJobProvider {
           },
         });
       } catch (error) {
-        console.log(`[JOBS]: Job ${options.name} failed`, error);
+        // Keep failure logs minimal; full stack traces can be noisy in production.
+        console.warn(
+          `[JOBS]: Job ${options.name} failed (jobId=${jobId})${isAdminRetry ? ' [admin retry]' : ''}`,
+        );
 
         const taskHasExceededRetries = error instanceof BackgroundTaskExceededRetriesError;
         const jobHasExceededRetries =
@@ -170,10 +198,9 @@ export class LocalJobProvider extends BaseJobProvider {
           !(error instanceof BackgroundTaskFailedError);
 
         if (taskHasExceededRetries || jobHasExceededRetries) {
-          backgroundJob = await prisma.backgroundJob.update({
+          await prisma.backgroundJob.update({
             where: {
               id: jobId,
-              status: BackgroundJobStatus.PROCESSING,
             },
             data: {
               status: BackgroundJobStatus.FAILED,
@@ -184,20 +211,44 @@ export class LocalJobProvider extends BaseJobProvider {
           return c.text('Task exceeded retries', 500);
         }
 
+        // Reset job to pending before resubmitting.
         backgroundJob = await prisma.backgroundJob.update({
           where: {
             id: jobId,
-            status: BackgroundJobStatus.PROCESSING,
           },
           data: {
             status: BackgroundJobStatus.PENDING,
           },
         });
 
+        // Exponential backoff + jitter (local provider): helps avoid tight retry loops
+        // and reduces the chance of repeated failures under load.
+        //
+        // Semantics:
+        // - `backgroundJob.retried` is incremented at the start of processing when X-Job-Retry is set.
+        // - In this catch block, we are *about to schedule the next retry*.
+        // - Therefore, the next attempt number is `retried + 1`.
+        const nextRetryAttempt = Math.max(0, backgroundJob.retried) + 1;
+        const baseMs = 1000; // 1s
+        const maxMs = 30000; // 30s cap
+        const backoffMs = Math.min(maxMs, baseMs * Math.pow(2, nextRetryAttempt - 1));
+        const jitterMs = Math.floor(Math.random() * 250);
+        const delayMs = backoffMs + jitterMs;
+
+        if (isAdminRetry) {
+          console.log(
+            `[JOBS]: Resubmitting job ${options.name} (${jobId}) retry=${nextRetryAttempt}/${backgroundJob.maxRetries} in ${delayMs}ms [admin retry]`,
+          );
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+
         await this.submitJobToEndpoint({
           jobId,
           jobDefinitionId: backgroundJob.jobId,
           data: options,
+          isRetry: true,
+          retrySource: retrySource === 'admin' ? 'admin' : undefined,
         });
       }
 
@@ -205,13 +256,30 @@ export class LocalJobProvider extends BaseJobProvider {
     };
   }
 
+  public async retryExistingJob(options: {
+    jobId: string;
+    jobDefinitionId: string;
+    data: SimpleTriggerJobOptions;
+    /** Optional retry source for log gating. */
+    retrySource?: 'admin';
+  }): Promise<void> {
+    await this.submitJobToEndpoint({
+      jobId: options.jobId,
+      jobDefinitionId: options.jobDefinitionId,
+      data: options.data,
+      isRetry: true,
+      retrySource: options.retrySource,
+    });
+  }
+
   private async submitJobToEndpoint(options: {
     jobId: string;
     jobDefinitionId: string;
     data: SimpleTriggerJobOptions;
     isRetry?: boolean;
+    retrySource?: 'admin';
   }) {
-    const { jobId, jobDefinitionId, data, isRetry } = options;
+    const { jobId, jobDefinitionId, data, isRetry, retrySource } = options;
 
     const endpoint = `${NEXT_PRIVATE_INTERNAL_WEBAPP_URL}/api/jobs/${jobDefinitionId}/${jobId}`;
     const signature = sign(data);
@@ -226,17 +294,39 @@ export class LocalJobProvider extends BaseJobProvider {
       headers['X-Job-Retry'] = '1';
     }
 
-    console.log('Submitting job to endpoint:', endpoint);
-    await Promise.race([
-      fetch(endpoint, {
+    if (retrySource === 'admin') {
+      headers['X-Job-Retry-Source'] = 'admin';
+    }
+
+    // Await the HTTP result with a timeout so callers (e.g. admin retries) can detect failures.
+    const controller = new AbortController();
+    const timeoutMs = 60_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(data),
         headers,
-      }).catch(() => null),
-      new Promise((resolve) => {
-        setTimeout(resolve, 150);
-      }),
-    ]);
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error(
+          `[JOBS]: Failed submitting job ${jobDefinitionId}/${jobId} (${data.name}) status=${res.status} body=${text}`,
+        );
+        throw new Error(`Job submit failed (${res.status}) ${text}`);
+      }
+    } catch (err) {
+      console.error(
+        `[JOBS]: Error submitting job ${jobDefinitionId}/${jobId} (${data.name}) to ${endpoint}`,
+        err,
+      );
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private createJobRunIO(jobId: string): JobRunIO {
@@ -257,17 +347,17 @@ export class LocalJobProvider extends BaseJobProvider {
               id: `task-${hashedKey}--${jobId}`,
               name: cacheKey,
               jobId,
-              status: BackgroundJobStatus.PENDING,
+              status: BackgroundJobTaskStatus.PENDING,
             },
           });
         }
 
-        if (task.status === BackgroundJobStatus.COMPLETED) {
+        if (task.status === BackgroundJobTaskStatus.COMPLETED) {
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           return task.result as T;
         }
 
-        if (task.retried >= 3) {
+        if (task.retried >= task.maxRetries) {
           throw new BackgroundTaskExceededRetriesError('Task exceeded retries');
         }
 
@@ -280,7 +370,7 @@ export class LocalJobProvider extends BaseJobProvider {
               jobId,
             },
             data: {
-              status: BackgroundJobStatus.COMPLETED,
+              status: BackgroundJobTaskStatus.COMPLETED,
               result: result === null ? Prisma.JsonNull : result,
               completedAt: new Date(),
             },
@@ -294,14 +384,15 @@ export class LocalJobProvider extends BaseJobProvider {
               jobId,
             },
             data: {
-              status: BackgroundJobStatus.PENDING,
+              status: BackgroundJobTaskStatus.FAILED,
               retried: {
                 increment: 1,
               },
             },
           });
 
-          console.log(`[JOBS:${task.id}] Task failed`, err);
+          // Avoid dumping full error objects here; the job-level handler already records failure.
+          console.warn(`[JOBS:${task.id}] Task failed`);
 
           throw new BackgroundTaskFailedError('Task failed');
         }
@@ -315,8 +406,12 @@ export class LocalJobProvider extends BaseJobProvider {
         warn: (...args) => console.warn(`[${jobId}]`, ...args),
       },
       // eslint-disable-next-line @typescript-eslint/require-await
-      wait: async () => {
-        throw new Error('Not implemented');
+      wait: async (_cacheKey: string, ms: number) => {
+        if (!Number.isFinite(ms) || ms < 0) {
+          throw new Error('wait(ms) must be a non-negative finite number');
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, ms));
       },
     };
   }

@@ -2909,6 +2909,8 @@ msgstr "Geben Sie hier Ihren Text ein"
 #: apps/remix/app/routes/embed+/v1+/authoring+/document.edit.$id.tsx
 #: apps/remix/app/routes/embed+/v1+/authoring+/document.edit.$id.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/users.$id.tsx
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 #: apps/remix/app/components/general/verify-email-banner.tsx
 #: apps/remix/app/components/general/template/template-edit-form.tsx
@@ -3296,6 +3298,10 @@ msgstr "Ich bin der Besitzer dieses Dokuments"
 msgid "I'm sure! Delete it"
 msgstr "Ich bin mir sicher! Löschen"
 
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
+msgid "If background jobs get stuck, you can re-run all FAILED background jobs. Use this sparingly."
+msgstr ""
+
 #: apps/remix/app/components/general/teams/team-transfer-status.tsx
 msgid "If they accept this request, the team will be transferred to their account."
 msgstr "Wenn sie diese Anfrage akzeptieren, wird das Team auf ihr Konto übertragen."
@@ -3564,6 +3570,10 @@ msgstr "Wird geladen..."
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 msgid "Login"
 msgstr "Anmelden"
+
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
+msgid "Maintenance"
+msgstr ""
 
 #: apps/remix/app/components/tables/user-settings-current-teams-table.tsx
 msgid "Manage"
@@ -4685,6 +4695,10 @@ msgstr "Aufbewahrung von Dokumenten"
 msgid "Retry"
 msgstr "Wiederholen"
 
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
+msgid "Retry failed jobs"
+msgstr ""
+
 #: apps/remix/app/routes/_unauthenticated+/team.verify.transfer.$token.tsx
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 #: apps/remix/app/routes/_unauthenticated+/team.invite.$token.tsx
@@ -5334,6 +5348,7 @@ msgstr "Abonnements"
 
 #: apps/remix/app/routes/embed+/v1+/authoring+/template.edit.$id.tsx
 #: apps/remix/app/routes/embed+/v1+/authoring+/document.edit.$id.tsx
+#: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 #: apps/remix/app/components/tables/user-settings-pending-teams-table-actions.tsx
 #: apps/remix/app/components/tables/team-settings-member-invites-table.tsx

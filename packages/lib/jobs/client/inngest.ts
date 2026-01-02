@@ -35,7 +35,6 @@ export class InngestJobProvider extends BaseJobProvider {
   }
 
   public defineJob<N extends string, T>(job: JobDefinition<N, T>): void {
-    console.log('defining job', job.id);
     const fn = this._client.createFunction(
       {
         id: job.id,
@@ -71,6 +70,19 @@ export class InngestJobProvider extends BaseJobProvider {
     });
   }
 
+  public async retryExistingJob(options: {
+    jobId: string;
+    // Inngest doesn't use this, but we keep the signature consistent.
+    jobDefinitionId: string;
+    data: SimpleTriggerJobOptions;
+    /** Optional retry source for log gating (ignored for Inngest). */
+    retrySource?: 'admin';
+  }): Promise<void> {
+    // Best-effort for Inngest: re-send the same event data.
+    // Note: this creates a new Inngest run; it does not “resume” an existing local DB job.
+    await this.triggerJob(options.data);
+  }
+
   public getApiHandler() {
     return async (context: HonoContext) => {
       const handler = createHonoPagesRoute({
@@ -86,7 +98,13 @@ export class InngestJobProvider extends BaseJobProvider {
     const { step } = ctx;
 
     return {
-      wait: step.sleep,
+      wait: async (cacheKey: string, ms: number) => {
+        // Keep JobRunIO.wait consistent across providers (ms as number).
+        // Inngest's step.sleep expects a duration string (e.g. "1.5s") or similar,
+        // so convert milliseconds to seconds.
+        const seconds = Math.max(0, ms) / 1000;
+        await step.sleep(cacheKey, `${seconds}s`);
+      },
       logger: {
         ...ctx.logger,
         log: ctx.logger.info,

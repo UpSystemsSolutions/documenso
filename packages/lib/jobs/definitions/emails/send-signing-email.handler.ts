@@ -32,7 +32,12 @@ export const run = async ({
 }) => {
   const { userId, documentId, recipientId, requestMetadata } = payload;
 
-  const [user, document, recipient] = await Promise.all([
+  let user;
+  let document;
+  let recipient;
+
+  // Revert: do not special-case P2025 here; allow Prisma error to propagate.
+  [user, document, recipient] = await Promise.all([
     prisma.user.findFirstOrThrow({
       where: {
         id: userId,

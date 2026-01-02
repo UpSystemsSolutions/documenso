@@ -25,6 +25,8 @@ const getFileFromBytes = (data: string) => {
   return binaryData;
 };
 
+// NOTE: Intentionally no normalization here.
+// We want to preserve the original behavior and fail fast if stored data isn't valid base64.
 const getFileFromBytes64 = (data: string) => {
   const binaryData = base64.decode(data);
 

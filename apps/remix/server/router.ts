@@ -8,6 +8,7 @@ import { jobsClient } from '@documenso/lib/jobs/client';
 import { openApiDocument } from '@documenso/trpc/server/open-api';
 
 import { filesRoute } from './api/files';
+import { adminJobsRoute } from './api/admin-jobs';
 import { type AppContext, appContext } from './context';
 import { appMiddleware } from './middleware';
 import { openApiTrpcServerHandler } from './trpc/hono-trpc-open-api';
@@ -38,9 +39,15 @@ app.route('/api/auth', auth);
 // Files route.
 app.route('/api/files', filesRoute);
 
+// Admin routes.
+app.route('/api/admin', adminJobsRoute);
+
 // API servers.
 app.route('/api/v1', tsRestHonoApp);
-app.use('/api/jobs/*', jobsClient.getApiHandler());
+
+// Jobs API (local/inngest provider handlers expect /api/jobs/:jobDefinitionId/:jobId)
+app.post('/api/jobs/:jobDefinitionId/:jobId', jobsClient.getApiHandler());
+
 app.use('/api/trpc/*', reactRouterTrpcServer);
 
 // Unstable API server routes. Order matters for these two.

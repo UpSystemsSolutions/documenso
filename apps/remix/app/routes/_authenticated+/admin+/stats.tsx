@@ -14,6 +14,7 @@ import {
   UserSquare2,
   Users,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { getDocumentStats } from '@documenso/lib/server-only/admin/get-documents-stats';
 import { getRecipientsStats } from '@documenso/lib/server-only/admin/get-recipients-stats';
@@ -30,6 +31,8 @@ import { CardMetric } from '~/components/general/metric-card';
 
 import { version } from '../../../../package.json';
 import type { Route } from './+types/stats';
+import { Button } from '@documenso/ui/primitives/button';
+import { useToast } from '@documenso/ui/primitives/use-toast';
 
 export async function loader() {
   const [
@@ -64,6 +67,10 @@ export async function loader() {
 
 export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
   const { _ } = useLingui();
+  const { toast } = useToast();
+
+  const [isRetryingJobs, setIsRetryingJobs] = useState(false);
+  const [retryJobsMessage, setRetryJobsMessage] = useState<string | null>(null);
 
   const {
     usersCount,
@@ -79,6 +86,110 @@ export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
       <h2 className="text-4xl font-semibold">
         <Trans>Instance Stats</Trans>
       </h2>
+
+      <div className="mt-6">
+        <h3 className="text-2xl font-semibold">
+          <Trans>Maintenance</Trans>
+        </h3>
+        <p className="text-muted-foreground mt-1 text-sm">
+          <Trans>
+            If background jobs get stuck, you can re-run all FAILED background jobs. Use this sparingly.
+          </Trans>
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isRetryingJobs}
+            disabled={isRetryingJobs}
+            onClick={async () => {
+              const confirmed = window.confirm(
+                'This will retry ALL FAILED background jobs on this Documenso instance. Continue?',
+              );
+
+              if (!confirmed) {
+                return;
+              }
+
+              setRetryJobsMessage(null);
+              setIsRetryingJobs(true);
+
+              try {
+                const res = await fetch('/api/admin/jobs/retry', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ scope: 'failed', limit: 1000 }),
+                });
+
+                const json = (await res.json().catch(() => null)) as
+                  | {
+                      matched: number;
+                      retried: number;
+                      failed: number;
+                      errors?: Array<{ id?: string; name?: string; error: string }>;
+                    }
+                  | { error?: string }
+                  | null;
+
+                if (!res.ok) {
+                  const message =
+                    (json && 'error' in json && typeof json.error === 'string' && json.error) ||
+                    `Request failed (${res.status})`;
+
+                  toast({
+                    title: _(msg`Error`),
+                    description: message,
+                    variant: 'destructive',
+                  });
+
+                  setRetryJobsMessage(message);
+                  return;
+                }
+
+                const topErrors =
+                  json && 'errors' in json && Array.isArray(json.errors)
+                    ? json.errors
+                        .slice(0, 3)
+                        .map((e) => `${e.name ?? e.id ?? 'job'}: ${e.error}`)
+                        .join(' | ')
+                    : null;
+
+                const message =
+                  json && 'matched' in json && 'retried' in json && 'failed' in json
+                    ? `Retried ${json.retried}/${json.matched} jobs (errors: ${json.failed}).${topErrors ? ` ${topErrors}` : ''}`
+                    : 'Retried jobs.';
+
+                toast({
+                  title: _(msg`Success`),
+                  description: message,
+                });
+
+                setRetryJobsMessage(message);
+              } catch (e) {
+                const message = e instanceof Error ? e.message : 'Unknown error';
+
+                toast({
+                  title: _(msg`Error`),
+                  description: message,
+                  variant: 'destructive',
+                });
+
+                setRetryJobsMessage(message);
+              } finally {
+                // Keep it disabled for a short moment to avoid double-click spam.
+                setTimeout(() => setIsRetryingJobs(false), 800);
+              }
+            }}
+          >
+            <Trans>Retry failed jobs</Trans>
+          </Button>
+
+          {retryJobsMessage ? (
+            <p className="text-sm text-muted-foreground">{retryJobsMessage}</p>
+          ) : null}
+        </div>
+      </div>
 
       <div className="mt-8 grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CardMetric icon={Users} title={_(msg`Total Users`)} value={usersCount} />

@@ -30,6 +30,7 @@ import { isDocumentCompleted } from '../../../utils/document';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
 import type { JobRunIO } from '../../client/_internal/job';
 import type { TSealDocumentJobDefinition } from './seal-document';
+import { nonRetryableJobError } from '../../client/errors';
 
 export const run = async ({
   payload,
@@ -40,24 +41,37 @@ export const run = async ({
 }) => {
   const { documentId, sendEmail = true, isResealing = false, requestMetadata } = payload;
 
-  const document = await prisma.document.findFirstOrThrow({
-    where: {
-      id: documentId,
-    },
-    include: {
-      documentMeta: true,
-      recipients: true,
-      team: {
-        select: {
-          teamGlobalSettings: {
-            select: {
-              includeSigningCertificate: true,
+  // Small delay to avoid race conditions when this job is triggered immediately after
+  // the final recipient action (status/fields/uploads may still be settling).
+  // Skip for resealing to avoid adding latency to admin/manual reseal flows.
+  if (!isResealing) {
+    await io.wait('initial-seal-delay', 1500);
+  }
+
+  const document = await prisma.document
+    .findFirst({
+      where: {
+        id: documentId,
+      },
+      include: {
+        documentMeta: true,
+        recipients: true,
+        team: {
+          select: {
+            teamGlobalSettings: {
+              select: {
+                includeSigningCertificate: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    })
+    .then((d) => d ?? null);
+
+  if (!document) {
+    throw nonRetryableJobError(`Document ${documentId} not found (cannot seal)`);
+  }
 
   const isComplete =
     document.recipients.some((recipient) => recipient.signingStatus === SigningStatus.REJECTED) ||
@@ -89,7 +103,7 @@ export const run = async ({
   });
 
   if (!documentData) {
-    throw new Error(`Document ${document.id} has no document data`);
+    throw nonRetryableJobError(`Document ${document.id} has no document data (cannot seal)`);
   }
 
   const recipients = await prisma.recipient.findMany({
@@ -142,7 +156,15 @@ export const run = async ({
     });
   }
 
-  const pdfData = await getFileServerSide(documentData);
+  let pdfData: Uint8Array;
+  try {
+    pdfData = await getFileServerSide(documentData);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw nonRetryableJobError(
+      `Document ${document.id} has invalid PDF data (${documentData.type}): ${msg}`,
+    );
+  }
 
   const certificateData =
     (document.team?.teamGlobalSettings?.includeSigningCertificate ?? true)

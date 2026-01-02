@@ -27,31 +27,38 @@ export const run = async ({
 }) => {
   const { documentId, recipientId } = payload;
 
-  const [document, recipient] = await Promise.all([
-    prisma.document.findFirstOrThrow({
-      where: {
-        id: documentId,
-      },
-      include: {
-        user: true,
-        documentMeta: true,
-        team: {
-          select: {
-            teamEmail: true,
-            name: true,
-            url: true,
-            teamGlobalSettings: true,
+  let document;
+  let recipient;
+
+  try {
+    [document, recipient] = await Promise.all([
+      prisma.document.findFirstOrThrow({
+        where: {
+          id: documentId,
+        },
+        include: {
+          user: true,
+          documentMeta: true,
+          team: {
+            select: {
+              teamEmail: true,
+              name: true,
+              url: true,
+              teamGlobalSettings: true,
+            },
           },
         },
-      },
-    }),
-    prisma.recipient.findFirstOrThrow({
-      where: {
-        id: recipientId,
-        signingStatus: SigningStatus.REJECTED,
-      },
-    }),
-  ]);
+      }),
+      prisma.recipient.findFirstOrThrow({
+        where: {
+          id: recipientId,
+          signingStatus: SigningStatus.REJECTED,
+        },
+      }),
+    ]);
+  } catch (err) {
+    throw err;
+  }
 
   const { documentMeta, user: documentOwner } = document;
 
