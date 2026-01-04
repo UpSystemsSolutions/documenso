@@ -10,6 +10,7 @@ import { getI18nInstance } from '../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { env } from '../../utils/env';
+import { parseSemicolonSeparatedEmails } from '../../utils/parse-semicolon-separated-emails';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../utils/team-global-settings-to-branding';
 
@@ -86,6 +87,7 @@ export const sendPendingEmail = async ({ documentId, recipientId }: SendPendingE
   const i18n = await getI18nInstance(document.documentMeta?.language);
 
   const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+  const replyToAddresses = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
   await mailer.sendMail({
     to: {
@@ -96,8 +98,13 @@ export const sendPendingEmail = async ({ documentId, recipientId }: SendPendingE
       name: customMailIdentity?.name || env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
       address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',
     },
-    ...(customMailIdentity?.email
-      ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+    ...(replyToAddresses.length
+      ? {
+          replyTo: replyToAddresses.map((address) => ({
+            name: customMailIdentity?.name || '',
+            address,
+          })),
+        }
       : {}),
     subject: i18n._(msg`Waiting for others to complete signing.`),
     html,

@@ -19,6 +19,7 @@ import { renderCustomEmailTemplate } from '../../utils/render-custom-email-templ
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../utils/team-global-settings-to-branding';
 import { formatDocumentsPath } from '../../utils/teams';
+import { parseSemicolonSeparatedEmails } from '../../utils/parse-semicolon-separated-emails';
 
 export interface SendDocumentOptions {
   documentId: number;
@@ -107,13 +108,20 @@ export const sendCompletedEmail = async ({ documentId, requestMetadata }: SendDo
       }),
     ]);
 
+    const ownerEmails = parseSemicolonSeparatedEmails(customMailIdentity?.email);
+
     await mailer.sendMail({
-      to: [
-        {
-          name: customMailIdentity?.name || owner.name || '',
-          address: customMailIdentity?.email || owner.email,
-        },
-      ],
+      to: ownerEmails.length
+        ? ownerEmails.map((address) => ({
+            name: customMailIdentity?.name || owner.name || '',
+            address,
+          }))
+        : [
+            {
+              name: customMailIdentity?.name || owner.name || '',
+              address: owner.email,
+            },
+          ],
       from: {
         name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
         address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',

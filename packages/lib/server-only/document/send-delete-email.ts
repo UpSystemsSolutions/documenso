@@ -11,6 +11,7 @@ import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { env } from '../../utils/env';
+import { parseSemicolonSeparatedEmails } from '../../utils/parse-semicolon-separated-emails';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../utils/team-global-settings-to-branding';
 
@@ -75,12 +76,18 @@ export const sendDeleteEmail = async ({ documentId, reason }: SendDeleteEmailOpt
   const i18n = await getI18nInstance();
 
   const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+  const toAddresses = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
   await mailer.sendMail({
-    to: {
-      name: customMailIdentity?.name || name || '',
-      address: customMailIdentity?.email || email,
-    },
+    to: toAddresses.length
+      ? toAddresses.map((address) => ({
+          name: customMailIdentity?.name || name || '',
+          address,
+        }))
+      : {
+          name: customMailIdentity?.name || name || '',
+          address: email,
+        },
     from: {
       name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
       address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',

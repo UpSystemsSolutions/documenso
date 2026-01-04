@@ -12,6 +12,7 @@ import { FROM_ADDRESS, FROM_NAME } from '../../../constants/email';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../../utils/team-global-settings-to-branding';
+import { parseSemicolonSeparatedEmails } from '../../../utils/parse-semicolon-separated-emails';
 import type { JobRunIO } from '../../client/_internal/job';
 import type { TSendRecipientSignedEmailJobDefinition } from './send-recipient-signed-email';
 
@@ -79,6 +80,7 @@ export const run = async ({
   const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
   const i18n = await getI18nInstance(document.documentMeta?.language);
   const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+  const ownerNotificationEmails = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
   const template = createElement(DocumentRecipientSignedEmailTemplate, {
     documentName: document.title,
@@ -102,10 +104,15 @@ export const run = async ({
     ]);
 
     await mailer.sendMail({
-      to: {
-        name: customMailIdentity?.name ?? owner.name ?? '',
-        address: customMailIdentity?.email ?? owner.email,
-      },
+      to: ownerNotificationEmails.length
+        ? ownerNotificationEmails.map((address) => ({
+            name: customMailIdentity?.name ?? owner.name ?? '',
+            address,
+          }))
+        : {
+            name: customMailIdentity?.name ?? owner.name ?? '',
+            address: owner.email,
+          },
       from: {
         name: FROM_NAME,
         address: FROM_ADDRESS,

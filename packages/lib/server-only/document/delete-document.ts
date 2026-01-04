@@ -31,6 +31,7 @@ import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../utils/team-global-settings-to-branding';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
+import { parseSemicolonSeparatedEmails } from '../../utils/parse-semicolon-separated-emails';
 
 export type DeleteDocumentOptions = {
   id: number;
@@ -229,6 +230,7 @@ const handleDocumentOwnerDelete = async ({
       const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
 
       const customMailIdentity = document.documentMeta?.emailSettings?.customMailIdentity;
+      const replyToAddresses = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
       const template = createElement(DocumentCancelTemplate, {
         documentName: document.title,
@@ -261,8 +263,13 @@ const handleDocumentOwnerDelete = async ({
           name: customMailIdentity?.name || FROM_NAME,
           address: FROM_ADDRESS,
         },
-        ...(customMailIdentity?.email
-          ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+        ...(replyToAddresses.length
+          ? {
+              replyTo: replyToAddresses.map((address) => ({
+                name: customMailIdentity?.name || '',
+                address,
+              })),
+            }
           : {}),
         subject: i18n._(msg`Document Cancelled`),
         html,

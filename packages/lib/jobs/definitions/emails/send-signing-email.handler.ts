@@ -17,6 +17,7 @@ import {
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
+import { parseSemicolonSeparatedEmails } from '../../../utils/parse-semicolon-separated-emails';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../../utils/team-global-settings-to-branding';
@@ -91,6 +92,7 @@ export const run = async ({
 
   const i18n = await getI18nInstance(documentMeta?.language);
   const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
+  const replyToAddresses = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
   const recipientActionVerb = i18n
     ._(RECIPIENT_ROLES_DESCRIPTION[recipient.role].actionVerb)
@@ -177,8 +179,13 @@ export const run = async ({
         name: customMailIdentity?.name || FROM_NAME,
         address: FROM_ADDRESS,
       },
-      ...(customMailIdentity?.email
-        ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+      ...(replyToAddresses.length
+        ? {
+            replyTo: replyToAddresses.map((address) => ({
+              name: customMailIdentity?.name || '',
+              address,
+            })),
+          }
         : {}),
       subject: renderCustomEmailTemplate(
         documentMeta?.subject || emailSubject,

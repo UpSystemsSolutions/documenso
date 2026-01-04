@@ -11,6 +11,7 @@ import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { FROM_ADDRESS, FROM_NAME } from '../../../constants/email';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
+import { parseSemicolonSeparatedEmails } from '../../../utils/parse-semicolon-separated-emails';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import { teamGlobalSettingsToBranding } from '../../../utils/team-global-settings-to-branding';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -55,6 +56,7 @@ export const run = async ({
 
   const i18n = await getI18nInstance(documentMeta?.language);
   const customMailIdentity = documentMeta?.emailSettings?.customMailIdentity;
+  const replyToAddresses = parseSemicolonSeparatedEmails(customMailIdentity?.email);
 
   // Send cancellation emails to all recipients who have been sent the document or viewed it
   const recipientsToNotify = document.recipients.filter(
@@ -96,8 +98,13 @@ export const run = async ({
             name: customMailIdentity?.name || FROM_NAME,
             address: FROM_ADDRESS,
           },
-          ...(customMailIdentity?.email
-            ? { replyTo: { name: customMailIdentity?.name || '', address: customMailIdentity.email } }
+          ...(replyToAddresses.length
+            ? {
+                replyTo: replyToAddresses.map((address) => ({
+                  name: customMailIdentity?.name || '',
+                  address,
+                })),
+              }
             : {}),
           subject: i18n._(msg`Document "${document.title}" Cancelled`),
           html,
