@@ -107,9 +107,7 @@ export const createDocumentFromTemplateLegacy = async ({
 
     include: {
       recipients: {
-        orderBy: {
-          id: 'asc',
-        },
+        orderBy: [{ signingOrder: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
       },
       documentData: true,
     },
@@ -117,9 +115,11 @@ export const createDocumentFromTemplateLegacy = async ({
 
   await prisma.field.createMany({
     data: template.fields.map((field) => {
-      const recipient = template.recipients.find((recipient) => recipient.id === field.recipientId);
+      const templateRecipient = template.recipients.find((recipient) => recipient.id === field.recipientId);
 
-      const documentRecipient = document.recipients.find((doc) => doc.email === recipient?.email);
+      const documentRecipient = document.recipients.find(
+        (doc) => doc.email === templateRecipient?.email && doc.role === templateRecipient?.role,
+      );
 
       if (!documentRecipient) {
         throw new Error('Recipient not found.');
@@ -142,8 +142,9 @@ export const createDocumentFromTemplateLegacy = async ({
 
   if (recipients && recipients.length > 0) {
     document.recipients = await Promise.all(
-      recipients.map(async (recipient, index) => {
-        const existingRecipient = document.recipients.at(index);
+      recipients.map(async (recipient) => {
+        // Find the existing recipient by email.
+        const existingRecipient = document.recipients.find((r) => r.email === recipient.email);
 
         return await prisma.recipient.upsert({
           where: {

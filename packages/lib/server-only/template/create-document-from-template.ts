@@ -331,16 +331,22 @@ export const createDocumentFromTemplate = async ({
     documentAuth: template.authOptions,
   });
 
-  const finalRecipients: FinalRecipient[] = template.recipients.map((templateRecipient) => {
-    const foundRecipient = recipients.find((recipient) => recipient.id === templateRecipient.id);
+  const finalRecipients: FinalRecipient[] = recipients.map((inputRecipient) => {
+    const templateRecipient = template.recipients.find((r) => r.id === inputRecipient.id);
+
+    if (!templateRecipient) {
+      throw new AppError(AppErrorCode.INVALID_BODY, {
+        message: `Recipient with ID ${inputRecipient.id} not found in the template.`,
+      });
+    }
 
     return {
       templateRecipientId: templateRecipient.id,
       fields: templateRecipient.fields,
-      name: foundRecipient ? (foundRecipient.name ?? '') : templateRecipient.name,
-      email: foundRecipient ? foundRecipient.email : templateRecipient.email,
+      name: inputRecipient.name ?? templateRecipient.name,
+      email: inputRecipient.email,
       role: templateRecipient.role,
-      signingOrder: foundRecipient?.signingOrder ?? templateRecipient.signingOrder,
+      signingOrder: inputRecipient.signingOrder ?? templateRecipient.signingOrder,
       authOptions: templateRecipient.authOptions,
     };
   });
@@ -398,7 +404,6 @@ export const createDocumentFromTemplate = async ({
             redirectUrl: override?.redirectUrl || template.templateMeta?.redirectUrl,
             distributionMethod:
               override?.distributionMethod || template.templateMeta?.distributionMethod,
-            // last `undefined` is due to JsonValue's
             emailSettings:
               override?.emailSettings || template.templateMeta?.emailSettings || undefined,
             signingOrder:
@@ -421,41 +426,46 @@ export const createDocumentFromTemplate = async ({
               false,
           },
         },
-        recipients: {
-          createMany: {
-            data: finalRecipients.map((recipient) => {
-              const authOptions = ZRecipientAuthOptionsSchema.parse(recipient?.authOptions);
-
-              return {
-                email: recipient.email,
-                name: recipient.name,
-                role: recipient.role,
-                authOptions: createRecipientAuthOptions({
-                  accessAuth: authOptions.accessAuth,
-                  actionAuth: authOptions.actionAuth,
-                }),
-                sendStatus:
-                  recipient.role === RecipientRole.CC ? SendStatus.SENT : SendStatus.NOT_SENT,
-                signingStatus:
-                  recipient.role === RecipientRole.CC
-                    ? SigningStatus.SIGNED
-                    : SigningStatus.NOT_SIGNED,
-                signingOrder: recipient.signingOrder,
-                token: nanoid(),
-              };
-            }),
-          },
-        },
       },
       include: {
-        recipients: {
-          orderBy: {
-            id: 'asc',
-          },
-        },
         documentData: true,
       },
     });
+
+    const createdRecipients = [] as Array<{
+      id: number;
+      email: string;
+      templateRecipientId: number;
+    }>;
+
+    for (const recipient of finalRecipients) {
+      const authOptions = ZRecipientAuthOptionsSchema.parse(recipient?.authOptions);
+
+      const created = await tx.recipient.create({
+        data: {
+          documentId: document.id,
+          email: recipient.email,
+          name: recipient.name,
+          role: recipient.role,
+          authOptions: createRecipientAuthOptions({
+            accessAuth: authOptions.accessAuth,
+            actionAuth: authOptions.actionAuth,
+          }),
+          sendStatus: recipient.role === RecipientRole.CC ? SendStatus.SENT : SendStatus.NOT_SENT,
+          signingStatus:
+            recipient.role === RecipientRole.CC ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
+          signingOrder: recipient.signingOrder,
+          token: nanoid(),
+        },
+        select: { id: true, email: true },
+      });
+
+      createdRecipients.push({
+        id: created.id,
+        email: created.email,
+        templateRecipientId: recipient.templateRecipientId,
+      });
+    }
 
     let fieldsToCreate: Omit<Field, 'id' | 'secondaryId' | 'templateId'>[] = [];
 
@@ -465,43 +475,18 @@ export const createDocumentFromTemplate = async ({
     );
 
     if (prefillFields?.length) {
-      // Validate that all prefill field IDs exist in the template
-      const invalidFieldIds = prefillFields
-        .map((prefillField) => prefillField.id)
-        .filter((id) => !allTemplateFieldIds.includes(id));
-
-      if (invalidFieldIds.length > 0) {
-        throw new AppError(AppErrorCode.INVALID_BODY, {
-          message: `The following field IDs do not exist in the template: ${invalidFieldIds.join(', ')}`,
-        });
-      }
-
-      // Validate that all prefill fields have the correct type
-      for (const prefillField of prefillFields) {
-        const templateField = finalRecipients
-          .flatMap((recipient) => recipient.fields)
-          .find((field) => field.id === prefillField.id);
-
-        if (!templateField) {
-          // This should never happen due to the previous validation, but just in case
+      // Validate that all prefill fields belong to the template
+      prefillFields.forEach((field) => {
+        if (!allTemplateFieldIds.includes(field.id)) {
           throw new AppError(AppErrorCode.INVALID_BODY, {
-            message: `Field with ID ${prefillField.id} not found in the template`,
+            message: `Prefill field ${field.id} does not belong to the template.`,
           });
         }
-
-        const expectedType = templateField.type.toLowerCase();
-        const actualType = prefillField.type;
-
-        if (expectedType !== actualType) {
-          throw new AppError(AppErrorCode.INVALID_BODY, {
-            message: `Field type mismatch for field ${prefillField.id}: expected ${expectedType}, got ${actualType}`,
-          });
-        }
-      }
+      });
     }
 
-    Object.values(finalRecipients).forEach(({ email, fields }) => {
-      const recipient = document.recipients.find((recipient) => recipient.email === email);
+    for (const { templateRecipientId, fields } of finalRecipients) {
+      const recipient = createdRecipients.find((r) => r.templateRecipientId === templateRecipientId);
 
       if (!recipient) {
         throw new Error('Recipient not found.');
@@ -556,7 +541,7 @@ export const createDocumentFromTemplate = async ({
           return payload;
         }),
       );
-    });
+    }
 
     await tx.field.createMany({
       data: fieldsToCreate.map((field) => ({
@@ -581,10 +566,9 @@ export const createDocumentFromTemplate = async ({
     });
 
     const createdDocument = await tx.document.findFirst({
-      where: {
-        id: document.id,
-      },
+      where: { id: document.id },
       include: {
+        documentData: true,
         documentMeta: true,
         recipients: true,
       },
@@ -601,6 +585,7 @@ export const createDocumentFromTemplate = async ({
       teamId,
     });
 
-    return document;
+    return createdDocument;
   });
 };
+

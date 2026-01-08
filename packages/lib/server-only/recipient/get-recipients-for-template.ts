@@ -30,9 +30,7 @@ export const getRecipientsForTemplate = async ({
             teamId: null,
           },
     },
-    orderBy: {
-      id: 'asc',
-    },
+    orderBy: [{ signingOrder: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
   });
 
   return recipients;
