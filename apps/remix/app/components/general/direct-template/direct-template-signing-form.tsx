@@ -276,16 +276,14 @@ export const DirectTemplateSigningForm = ({
                 />
               ))
               .with(FieldType.TEXT, () => {
-                const parsedFieldMeta = field.fieldMeta
-                  ? ZTextFieldMeta.parse(field.fieldMeta)
-                  : null;
+                const parsedFieldMeta = ZTextFieldMeta.safeParse(field.fieldMeta);
 
                 return (
                   <DocumentSigningTextField
                     key={field.id}
                     field={{
                       ...field,
-                      fieldMeta: parsedFieldMeta,
+                      fieldMeta: parsedFieldMeta.success ? parsedFieldMeta.data : null,
                     }}
                     onSignField={onSignField}
                     onUnsignField={onUnsignField}
@@ -293,16 +291,14 @@ export const DirectTemplateSigningForm = ({
                 );
               })
               .with(FieldType.NUMBER, () => {
-                const parsedFieldMeta = field.fieldMeta
-                  ? ZNumberFieldMeta.parse(field.fieldMeta)
-                  : null;
+                const parsedFieldMeta = ZNumberFieldMeta.safeParse(field.fieldMeta);
 
                 return (
                   <DocumentSigningNumberField
                     key={field.id}
                     field={{
                       ...field,
-                      fieldMeta: parsedFieldMeta,
+                      fieldMeta: parsedFieldMeta.success ? parsedFieldMeta.data : null,
                     }}
                     onSignField={onSignField}
                     onUnsignField={onUnsignField}
@@ -310,16 +306,14 @@ export const DirectTemplateSigningForm = ({
                 );
               })
               .with(FieldType.DROPDOWN, () => {
-                const parsedFieldMeta = field.fieldMeta
-                  ? ZDropdownFieldMeta.parse(field.fieldMeta)
-                  : null;
+                const parsedFieldMeta = ZDropdownFieldMeta.safeParse(field.fieldMeta);
 
                 return (
                   <DocumentSigningDropdownField
                     key={field.id}
                     field={{
                       ...field,
-                      fieldMeta: parsedFieldMeta,
+                      fieldMeta: parsedFieldMeta.success ? parsedFieldMeta.data : null,
                     }}
                     onSignField={onSignField}
                     onUnsignField={onUnsignField}
@@ -327,16 +321,14 @@ export const DirectTemplateSigningForm = ({
                 );
               })
               .with(FieldType.RADIO, () => {
-                const parsedFieldMeta = field.fieldMeta
-                  ? ZRadioFieldMeta.parse(field.fieldMeta)
-                  : null;
+                const parsedFieldMeta = ZRadioFieldMeta.safeParse(field.fieldMeta);
 
                 return (
                   <DocumentSigningRadioField
                     key={field.id}
                     field={{
                       ...field,
-                      fieldMeta: parsedFieldMeta,
+                      fieldMeta: parsedFieldMeta.success ? parsedFieldMeta.data : null,
                     }}
                     onSignField={onSignField}
                     onUnsignField={onUnsignField}
@@ -344,16 +336,14 @@ export const DirectTemplateSigningForm = ({
                 );
               })
               .with(FieldType.CHECKBOX, () => {
-                const parsedFieldMeta = field.fieldMeta
-                  ? ZCheckboxFieldMeta.parse(field.fieldMeta)
-                  : null;
+                const parsedFieldMeta = ZCheckboxFieldMeta.safeParse(field.fieldMeta);
 
                 return (
                   <DocumentSigningCheckboxField
                     key={field.id}
                     field={{
                       ...field,
-                      fieldMeta: parsedFieldMeta,
+                      fieldMeta: parsedFieldMeta.success ? parsedFieldMeta.data : null,
                     }}
                     onSignField={onSignField}
                     onUnsignField={onUnsignField}

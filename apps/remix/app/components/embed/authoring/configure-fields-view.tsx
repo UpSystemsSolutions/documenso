@@ -397,11 +397,15 @@ export const ConfigureFieldsView = ({
       const fieldIndex = localFields.findIndex((field) => field.formId === formId);
 
       if (fieldIndex !== -1) {
-        const parsedFieldMeta = ZFieldMetaSchema.parse(fieldMeta);
+        const parsedFieldMetaResult = ZFieldMetaSchema.safeParse(fieldMeta);
+
+        if (!parsedFieldMetaResult.success) {
+          return;
+        }
 
         update(fieldIndex, {
           ...localFields[fieldIndex],
-          fieldMeta: parsedFieldMeta,
+          fieldMeta: parsedFieldMetaResult.data,
         });
       }
     },

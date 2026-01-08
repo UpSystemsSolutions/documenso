@@ -173,6 +173,9 @@ export const ZFieldMetaSchema = z
       .transform(() => undefined),
     ZFieldMetaNotOptionalSchema,
   ])
+  // Legacy rows may store fieldMeta as null; treat it as undefined.
+  .nullable()
+  .transform((v) => (v === null ? undefined : v))
   .optional();
 
 export type TFieldMetaSchema = z.infer<typeof ZFieldMetaSchema>;

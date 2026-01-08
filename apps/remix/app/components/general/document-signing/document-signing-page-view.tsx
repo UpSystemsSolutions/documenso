@@ -209,37 +209,42 @@ export const DocumentSigningPageView = ({
                   <DocumentSigningEmailField key={field.id} field={field} />
                 ))
                 .with(FieldType.TEXT, () => {
+                  const parsed = ZTextFieldMeta.safeParse(field.fieldMeta);
                   const fieldWithMeta: FieldWithSignatureAndFieldMeta = {
                     ...field,
-                    fieldMeta: field.fieldMeta ? ZTextFieldMeta.parse(field.fieldMeta) : null,
+                    fieldMeta: parsed.success ? parsed.data : null,
                   };
                   return <DocumentSigningTextField key={field.id} field={fieldWithMeta} />;
                 })
                 .with(FieldType.NUMBER, () => {
+                  const parsed = ZNumberFieldMeta.safeParse(field.fieldMeta);
                   const fieldWithMeta: FieldWithSignatureAndFieldMeta = {
                     ...field,
-                    fieldMeta: field.fieldMeta ? ZNumberFieldMeta.parse(field.fieldMeta) : null,
+                    fieldMeta: parsed.success ? parsed.data : null,
                   };
                   return <DocumentSigningNumberField key={field.id} field={fieldWithMeta} />;
                 })
                 .with(FieldType.RADIO, () => {
+                  const parsed = ZRadioFieldMeta.safeParse(field.fieldMeta);
                   const fieldWithMeta: FieldWithSignatureAndFieldMeta = {
                     ...field,
-                    fieldMeta: field.fieldMeta ? ZRadioFieldMeta.parse(field.fieldMeta) : null,
+                    fieldMeta: parsed.success ? parsed.data : null,
                   };
                   return <DocumentSigningRadioField key={field.id} field={fieldWithMeta} />;
                 })
                 .with(FieldType.CHECKBOX, () => {
+                  const parsed = ZCheckboxFieldMeta.safeParse(field.fieldMeta);
                   const fieldWithMeta: FieldWithSignatureAndFieldMeta = {
                     ...field,
-                    fieldMeta: field.fieldMeta ? ZCheckboxFieldMeta.parse(field.fieldMeta) : null,
+                    fieldMeta: parsed.success ? parsed.data : null,
                   };
                   return <DocumentSigningCheckboxField key={field.id} field={fieldWithMeta} />;
                 })
                 .with(FieldType.DROPDOWN, () => {
+                  const parsed = ZDropdownFieldMeta.safeParse(field.fieldMeta);
                   const fieldWithMeta: FieldWithSignatureAndFieldMeta = {
                     ...field,
-                    fieldMeta: field.fieldMeta ? ZDropdownFieldMeta.parse(field.fieldMeta) : null,
+                    fieldMeta: parsed.success ? parsed.data : null,
                   };
                   return <DocumentSigningDropdownField key={field.id} field={fieldWithMeta} />;
                 })

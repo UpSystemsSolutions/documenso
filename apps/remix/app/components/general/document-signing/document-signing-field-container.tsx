@@ -67,8 +67,10 @@ export const DocumentSigningFieldContainer = ({
   const { executeActionAuthProcedure, isAuthRedirectRequired } =
     useRequiredDocumentSigningAuthContext();
 
-  const parsedFieldMeta = field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined;
-  const readOnlyField = parsedFieldMeta?.readOnly || false;
+  const parsedFieldMetaResult = ZFieldMetaSchema.safeParse(field.fieldMeta);
+  const readOnlyField = parsedFieldMetaResult.success
+    ? parsedFieldMetaResult.data?.readOnly || false
+    : false;
 
   const handleInsertField = async () => {
     if (field.inserted || !onSign) {

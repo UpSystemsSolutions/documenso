@@ -54,16 +54,17 @@ export const DocumentSigningNumberField = ({
   const { toast } = useToast();
   const { revalidate } = useRevalidator();
 
-  const { recipient, targetSigner, isAssistantMode } = useDocumentSigningRecipientContext();
+  const { recipient, isAssistantMode } = useDocumentSigningRecipientContext();
 
   const [showNumberModal, setShowNumberModal] = useState(false);
 
   const safeFieldMeta = ZNumberFieldMeta.safeParse(field.fieldMeta);
   const parsedFieldMeta = safeFieldMeta.success ? safeFieldMeta.data : null;
 
-  const defaultValue = parsedFieldMeta?.value;
   const [localNumber, setLocalNumber] = useState(
-    parsedFieldMeta?.value ? String(parsedFieldMeta.value) : '0',
+    parsedFieldMeta?.value !== undefined && parsedFieldMeta?.value !== null
+      ? String(parsedFieldMeta.value)
+      : '',
   );
 
   const initialErrors: ValidationErrors = {
@@ -111,6 +112,30 @@ export const DocumentSigningNumberField = ({
   };
 
   const onDialogSignClick = () => {
+    // Re-validate on save click (mirrors Text field behavior).
+    if (parsedFieldMeta) {
+      const validationErrors = validateNumberField(localNumber, parsedFieldMeta, true);
+      if (validationErrors.length > 0) {
+        setErrors({
+          isNumber: validationErrors.filter((error) => error.includes('valid number')),
+          required: validationErrors.filter((error) => error.includes('required')),
+          minValue: validationErrors.filter((error) => error.includes('minimum value')),
+          maxValue: validationErrors.filter((error) => error.includes('maximum value')),
+          numberFormat: validationErrors.filter((error) => error.includes('number format')),
+        });
+        return;
+      }
+    } else {
+      const validationErrors = validateNumberField(localNumber);
+      if (validationErrors.length > 0) {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          isNumber: validationErrors.filter((error) => error.includes('valid number')),
+        }));
+        return;
+      }
+    }
+
     setShowNumberModal(false);
 
     void executeActionAuthProcedure({
@@ -163,10 +188,13 @@ export const DocumentSigningNumberField = ({
   };
 
   const onPreSign = () => {
-    if (isAssistantMode) {
-      return true;
+    // If the field is already inserted, clicking it should reset/remove it (same UX as other fields).
+    if (field.inserted) {
+      void onRemove();
+      return false;
     }
 
+    // Match Text field UX: always show modal first (no auto signing).
     setShowNumberModal(true);
 
     if (localNumber && parsedFieldMeta) {
@@ -212,23 +240,18 @@ export const DocumentSigningNumberField = ({
   };
 
   useEffect(() => {
+    // Mirror Text field behavior: closing the modal resets local state back to default meta.
     if (!showNumberModal) {
-      setLocalNumber(parsedFieldMeta?.value ? String(parsedFieldMeta.value) : '0');
+      setLocalNumber(
+        parsedFieldMeta?.value !== undefined && parsedFieldMeta?.value !== null
+          ? String(parsedFieldMeta.value)
+          : '',
+      );
       setErrors(initialErrors);
     }
   }, [showNumberModal]);
 
-  useEffect(() => {
-    if (
-      (!field.inserted && defaultValue && localNumber) ||
-      (!field.inserted && parsedFieldMeta?.readOnly && defaultValue)
-    ) {
-      void executeActionAuthProcedure({
-        onReauthFormSubmit: async (authOptions) => await onSign(authOptions),
-        actionTarget: field.type,
-      });
-    }
-  }, []);
+  // REMOVE: auto-sign effect for number fields (it bypasses the modal UX)
 
   let fieldDisplayName = 'Number';
 
@@ -269,7 +292,8 @@ export const DocumentSigningNumberField = ({
 
           <div>
             <Input
-              type="text"
+              type="number"
+              inputMode="decimal"
               placeholder={parsedFieldMeta?.placeholder ?? ''}
               className={cn('mt-2 w-full rounded-md', {
                 'border-2 border-red-300 ring-2 ring-red-200 ring-offset-2 ring-offset-red-200 focus-visible:border-red-400 focus-visible:ring-4 focus-visible:ring-red-200 focus-visible:ring-offset-2 focus-visible:ring-offset-red-200':

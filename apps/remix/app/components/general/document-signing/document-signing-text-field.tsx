@@ -225,7 +225,8 @@ export const DocumentSigningTextField = ({
     }
   }, []);
 
-  const parsedField = field.fieldMeta ? ZTextFieldMeta.parse(field.fieldMeta) : undefined;
+  // Remove strict parsing here; we've already safe-parsed field meta above.
+  const parsedField = safeFieldMeta.success ? safeFieldMeta.data : undefined;
 
   const labelDisplay =
     parsedField?.label && parsedField.label.length < 20

@@ -48,10 +48,12 @@ export const DocumentSigningDropdownField = ({
 
   const { executeActionAuthProcedure } = useRequiredDocumentSigningAuthContext();
 
-  const parsedFieldMeta = ZDropdownFieldMeta.parse(field.fieldMeta);
+  const parsedFieldMetaResult = ZDropdownFieldMeta.safeParse(field.fieldMeta);
+  const parsedFieldMeta = parsedFieldMetaResult.success ? parsedFieldMetaResult.data : null;
+
   const isReadOnly = parsedFieldMeta?.readOnly;
   const defaultValue = parsedFieldMeta?.defaultValue;
-  const [localChoice, setLocalChoice] = useState(parsedFieldMeta.defaultValue ?? '');
+  const [localChoice, setLocalChoice] = useState(defaultValue ?? '');
 
   const { mutateAsync: signFieldWithToken, isPending: isSignFieldWithTokenLoading } =
     trpc.field.signFieldWithToken.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);

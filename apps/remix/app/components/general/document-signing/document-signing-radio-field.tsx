@@ -40,8 +40,10 @@ export const DocumentSigningRadioField = ({
 
   const { recipient, targetSigner, isAssistantMode } = useDocumentSigningRecipientContext();
 
-  const parsedFieldMeta = ZRadioFieldMeta.parse(field.fieldMeta);
-  const values = parsedFieldMeta.values?.map((item) => ({
+  const parsedFieldMetaResult = ZRadioFieldMeta.safeParse(field.fieldMeta);
+  const parsedFieldMeta = parsedFieldMetaResult.success ? parsedFieldMetaResult.data : null;
+
+  const values = parsedFieldMeta?.values?.map((item) => ({
     ...item,
     value: item.value.length > 0 ? item.value : `empty-value-${item.id}`,
   }));
@@ -64,7 +66,7 @@ export const DocumentSigningRadioField = ({
   const shouldAutoSignField =
     (!field.inserted && selectedOption) ||
     (!field.inserted && defaultValue) ||
-    (!field.inserted && parsedFieldMeta.readOnly && defaultValue);
+    (!field.inserted && parsedFieldMeta?.readOnly && defaultValue);
 
   const onSign = async (authOptions?: TRecipientActionAuth) => {
     try {

@@ -45,12 +45,17 @@ export const DocumentSigningCheckboxField = ({
 
   const { executeActionAuthProcedure } = useRequiredDocumentSigningAuthContext();
 
-  const parsedFieldMeta = ZCheckboxFieldMeta.parse(
+  // NOTE: fieldMeta can be null/invalid for legacy documents; never hard-parse here.
+  const parsedFieldMetaResult = ZCheckboxFieldMeta.safeParse(
     field.fieldMeta ?? {
       type: 'checkbox',
       values: [{ id: 1, checked: false, value: '' }],
     },
   );
+
+  const parsedFieldMeta = parsedFieldMetaResult.success
+    ? parsedFieldMetaResult.data
+    : { type: 'checkbox' as const, values: [{ id: 1, checked: false, value: '' }] };
 
   const values = parsedFieldMeta.values?.map((item) => ({
     ...item,
